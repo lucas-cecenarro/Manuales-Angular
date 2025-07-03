@@ -1,0 +1,31 @@
+<h4 class="mb-4 text-center">Detalle de Factura</h4>
+
+<table class="table table-bordered">
+  <thead class="table-dark">
+    <tr>
+      <th>Producto</th>
+      <th>Categoría</th>
+      <th>Cantidad</th>
+      <th>Precio (ARS)</th>
+      <th>Subtotal (ARS)</th>
+      <th>Acciones</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr *ngFor="let item of items">
+      <td>{{ item.producto.nombre }}</td>
+      <td>{{ item.producto.categoria }}</td>
+      <td>{{ item.cantidad }}</td>
+      <td>$ {{ item.producto.precio | number:'1.2-2' }}</td>
+      <td>$ {{ item.producto.precio * item.cantidad | number:'1.2-2' }}</td>
+      <td><button class="btn btn-sm btn-outline-danger" (click)="eliminarProducto(item.producto.id)">Eliminar</button></td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="text-end">
+  <p><strong>Total ARS:</strong> $ {{ totalARS | number:'1.2-2' }}</p>
+  <p><strong>Total USD:</strong> U$D {{ totalUSD | number:'1.2-2' }}</p>
+  <button class="btn btn-success mt-3" (click)="confirmarCompra()">Confirmar compra</button>
+
+</div>

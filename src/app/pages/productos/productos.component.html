@@ -1,0 +1,95 @@
+<div class="container productos-container">
+  <h2 class="text-center mb-4">Nuestros Productos</h2>
+
+  <div *ngIf="productos.length === 0" class="alert alert-info text-center">
+    No hay productos disponibles aún.
+  </div>
+
+  <div class="row mb-4 buscador-productos">
+    <div class="col-12">
+      <input type="text" class="form-control" placeholder="Buscar productos, marcas y más..." [(ngModel)]="textoBusqueda">
+    </div>
+  </div>
+
+  <div class="row row-cols-1 row-cols-md-3 g-4" *ngIf="productos.length > 0">
+  <div class="col" *ngFor="let producto of productos | filtroProducto:textoBusqueda">
+    <div class="card h-100 tarjeta-producto">
+
+      <!-- Imagen ajustada -->
+      <div class="producto-imagen">
+        <img [src]="producto.imagenUrl" alt="{{ producto.nombre }}">
+      </div>
+
+      <div class="card-body">
+        <h5 class="card-title">{{ producto.nombre }}</h5>
+        <p class="card-text">{{ producto.descripcion }}</p>
+        <p class="fw-bold text-light">$ {{ producto.precio | number:'1.2-2' }}</p>
+        <span class="badge bg-secondary">{{ producto.categoria }}</span>
+
+        <div class="mt-3 d-flex justify-content-between botones-producto" *ngIf="usuarioLogueado">
+          <button class="btn btn-sm btn-outline-primary" (click)="editarProducto(producto)">Editar</button>
+          <button class="btn btn-sm btn-outline-danger" (click)="eliminarProducto(producto.id)">Eliminar</button>
+          <button class="btn btn-sm btn-outline-success" (click)="agregarAlCarrito(producto)">Agregar al carrito</button>
+          <button *ngIf="productoEditandoId === producto.id"
+                  class="btn btn-secondary ms-2"
+                  (click)="cancelarEdicion()">Cancelar</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- Alerta -->
+<div *ngIf="mensajeAlerta" class="alert alert-{{ tipoAlerta }} text-center" role="alert">
+  {{ mensajeAlerta }}
+</div>
+
+<div class="espacio"></div>
+
+<!-- Formulario -->
+<div class="container mb-5" *ngIf="usuarioLogueado">
+  <h3 class="text-center">
+    {{ modoEdicion ? 'Editar producto' : 'Agregar nuevo producto' }}
+  </h3>
+
+  <form id="formulario-producto" [formGroup]="formulario" (ngSubmit)="agregarProducto()" class="formulario-producto row g-3 mt-3">
+    <div class="col-md-6">
+      <label class="form-label">Nombre</label>
+      <input type="text" class="form-control" formControlName="nombre"
+             [ngClass]="{ 'is-invalid': formulario.get('nombre')?.touched && formulario.get('nombre')?.invalid }">
+    </div>
+
+    <div class="col-md-6">
+      <label class="form-label">Categoría</label>
+      <input type="text" class="form-control" formControlName="categoria"
+             [ngClass]="{ 'is-invalid': formulario.get('categoria')?.touched && formulario.get('categoria')?.invalid }">
+    </div>
+
+    <div class="col-md-6">
+      <label class="form-label">Precio</label>
+      <input type="number" class="form-control" formControlName="precio"
+             [ngClass]="{ 'is-invalid': formulario.get('precio')?.touched && formulario.get('precio')?.invalid }">
+    </div>
+
+    <div class="col-md-6">
+      <label class="form-label">Imagen (URL)</label>
+      <input type="text" class="form-control" formControlName="imagenUrl"
+             [ngClass]="{ 'is-invalid': formulario.get('imagenUrl')?.touched && formulario.get('imagenUrl')?.invalid }">
+    </div>
+
+    <div class="col-12">
+      <label class="form-label">Descripción</label>
+      <textarea class="form-control" rows="2" formControlName="descripcion"
+                [ngClass]="{ 'is-invalid': formulario.get('descripcion')?.touched && formulario.get('descripcion')?.invalid }"></textarea>
+    </div>
+
+    <button type="submit" class="btn btn-success" *ngIf="!modoEdicion">Agregar producto</button>
+    <button type="submit" class="btn btn-primary" *ngIf="modoEdicion">Actualizar producto</button>
+
+    <div *ngIf="productos.length === 0" class="alert alert-warning text-center mt-4">
+      No hay productos disponibles aún. ¡Agregá uno arriba!
+    </div>
+  </form>
+</div>
