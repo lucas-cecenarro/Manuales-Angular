@@ -6,15 +6,20 @@ import { Producto } from '../models/producto.model';
   standalone: true
 })
 export class FiltroProductoPipe implements PipeTransform {
+
   transform(productos: Producto[], texto: string): Producto[] {
     if (!texto || !productos) return productos;
 
     const textoMin = texto.toLowerCase();
 
     return productos.filter(p =>
-      p.nombre.toLowerCase().includes(textoMin) ||
-      p.categoria.toLowerCase().includes(textoMin) ||
-      p.descripcion.toLowerCase().includes(textoMin) // ✅ nuevo campo
+      // chequea ambos posibles nombres de campos
+      (p.nombre?.toLowerCase().includes(textoMin) || p.name?.toLowerCase().includes(textoMin)) ||
+      (p.categoria?.toLowerCase().includes(textoMin) || p.category?.toLowerCase().includes(textoMin)) ||
+      (p.descripcion?.toLowerCase().includes(textoMin) || p.description?.toLowerCase().includes(textoMin))
     );
   }
 }
+
+
+

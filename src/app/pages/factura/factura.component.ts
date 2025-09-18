@@ -1,17 +1,17 @@
 import { Component, OnInit, Inject, PLATFORM_ID } from '@angular/core';
 import { isPlatformBrowser, CommonModule } from '@angular/common';
-import { HttpClientModule } from '@angular/common/http';
 import { CarritoService } from '../../services/carrito.service';
 import { BcraService } from '../../services/bcra.service';
 import { ItemFactura } from '../../models/item-factura.model';
 import jsPDF from 'jspdf';
 import * as XLSX from 'xlsx';
 import { FacturaPreviewComponent } from '../../components/factura-preview/factura-preview.component';
+import { SesionService } from '../../services/sesion.service';
 
 @Component({
   selector: 'app-factura',
   standalone: true,
-  imports: [CommonModule, HttpClientModule, FacturaPreviewComponent],
+  imports: [CommonModule, FacturaPreviewComponent],
   templateUrl: './factura.component.html',
   styleUrls: ['./factura.component.scss']
 })
@@ -22,11 +22,13 @@ export class FacturaComponent implements OnInit {
   historial: any[] = [];
   mensajeAlerta: string = '';
   tipoAlerta: 'success' | 'danger' | 'warning' = 'success';
+  usuarioLogueado: boolean = false;
   enNavegador = false;
 
   constructor(
     private bcraService: BcraService,
     private carritoService: CarritoService,
+    public sesionService: SesionService,
     @Inject(PLATFORM_ID) private platformId: Object
   ) {
     this.enNavegador = isPlatformBrowser(this.platformId);
@@ -35,39 +37,53 @@ export class FacturaComponent implements OnInit {
   ngOnInit(): void {
     if (!this.enNavegador) return;
 
-    this.historial = JSON.parse(localStorage.getItem('facturas') || '[]');
-    this.items = this.carritoService.obtenerItems();
+    // Reacciona a login/logout
+    this.sesionService.usuarioActual$.subscribe(() => {
+      this.usuarioLogueado = !!this.sesionService.usuarioActual;
+      this.items = this.carritoService.obtenerItems();
+      this.historial = JSON.parse(localStorage.getItem('facturas') || '[]');
+      this.calcularTotal();
+    });
 
+    // Tipo de cambio (con fallback)
     this.bcraService.obtenerTipoCambioUSD().subscribe(valor => {
-      this.tipoCambioUSD = valor || 1100;
+      this.tipoCambioUSD = Number(valor) > 0 ? Number(valor) : 1100;
       this.calcularTotal();
     });
   }
 
+  private precioUnitario(item: ItemFactura): number {
+    return Number((item?.producto as any)?.precio ?? (item?.producto as any)?.priceARS ?? 0);
+  }
+
   calcularTotal(): void {
-    this.totalARS = this.items.reduce((acc, item) => acc + item.producto.precio * item.cantidad, 0);
+    this.totalARS = this.items.reduce((acc, item) => {
+      const precio = this.precioUnitario(item);
+      const cant = Number(item?.cantidad ?? 0);
+      return acc + (precio * cant);
+    }, 0);
   }
 
   get totalUSD(): number {
-    return this.totalARS / this.tipoCambioUSD;
+    return this.tipoCambioUSD > 0 ? this.totalARS / this.tipoCambioUSD : 0;
   }
 
   mostrarAlerta(mensaje: string, tipo: 'success' | 'danger' | 'warning' = 'success'): void {
     this.mensajeAlerta = mensaje;
     this.tipoAlerta = tipo;
-    setTimeout(() => {
-      this.mensajeAlerta = '';
-    }, 3000);
+    setTimeout(() => { this.mensajeAlerta = ''; }, 3000);
   }
 
   onCompraConfirmada(): void {
-  this.confirmarCompra();
+    this.confirmarCompra();
   }
 
-  onEliminarItem(id: number): void {
-    this.items = this.items.filter(item => item.producto.id !== id);
-    this.totalARS = this.items.reduce((acc, item) => acc + item.producto.precio * item.cantidad, 0);
-    this.carritoService.eliminarProducto(id);
+  onEliminarItem(id: string): void {
+    const sid = id ?? '';
+    if (!sid) return;
+    this.items = this.items.filter(item => String(item?.producto?.id ?? '') !== sid);
+    this.calcularTotal();
+    this.carritoService.eliminarProducto(sid);
   }
 
   confirmarCompra(): void {
@@ -92,40 +108,27 @@ export class FacturaComponent implements OnInit {
 
   eliminarFactura(index: number): void {
     if (!this.enNavegador) return;
-
     this.historial.splice(index, 1);
     localStorage.setItem('facturas', JSON.stringify(this.historial));
   }
 
   exportarExcel(factura: any): void {
-    const datos = factura.items.map((item: any) => ({
-      Producto: item.producto.nombre,
-      Categoría: item.producto.categoria,
-      Cantidad: item.cantidad,
-      PrecioUnitario: item.producto.precio,
-      Subtotal: item.cantidad * item.producto.precio
-    }));
-
-    datos.push({
-      Producto: '',
-      Categoría: '',
-      Cantidad: '',
-      PrecioUnitario: 'Total ARS',
-      Subtotal: factura.totalARS
+    const datos = factura.items.map((item: any) => {
+      const p = item?.producto || {};
+      const nombre = p.nombre ?? p.name ?? 'Producto';
+      const categoria = p.categoria ?? p.category ?? '';
+      const precio = Number(p.precio ?? p.priceARS ?? 0);
+      const cant = Number(item?.cantidad ?? 0);
+      return { Producto: nombre, Categoría: categoria, Cantidad: cant, PrecioUnitario: precio, Subtotal: cant * precio };
     });
 
-    datos.push({
-      Producto: '',
-      Categoría: '',
-      Cantidad: '',
-      PrecioUnitario: 'Total USD',
-      Subtotal: factura.totalUSD
-    });
+    datos.push({ Producto: '', Categoría: '', Cantidad: '', PrecioUnitario: 'Total ARS', Subtotal: factura.totalARS });
+    datos.push({ Producto: '', Categoría: '', Cantidad: '', PrecioUnitario: 'Total USD', Subtotal: factura.totalUSD });
 
     const hoja = XLSX.utils.json_to_sheet(datos);
     const libro = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(libro, hoja, 'Factura');
-    const fecha = factura.fecha.replace(/[/\s:]/g, '-');
+    const fecha = String(factura.fecha).replace(/[/\s:]/g, '-');
     XLSX.writeFile(libro, `factura-${fecha}.xlsx`);
   }
 
@@ -138,13 +141,16 @@ export class FacturaComponent implements OnInit {
     let y = 30;
 
     factura.items.forEach((item: any, index: number) => {
-      doc.text(`${index + 1}. ${item.producto.nombre} - Cant: ${item.cantidad} - $${item.producto.precio}`, 10, y);
+      const p = item?.producto || {};
+      const nombre = p.nombre ?? p.name ?? 'Producto';
+      const precio = Number(p.precio ?? p.priceARS ?? 0);
+      const cant = Number(item?.cantidad ?? 0);
+      doc.text(`${index + 1}. ${nombre} - Cant: ${cant} - $${precio}`, 10, y);
       y += 10;
     });
 
-    doc.text(`Total ARS: $${factura.totalARS.toFixed(2)}`, 10, y + 10);
-    doc.text(`Total USD: U$D${factura.totalUSD.toFixed(2)}`, 10, y + 20);
-
-    doc.save(`factura-${factura.fecha.replace(/[/\s:]/g, '-')}.pdf`);
+    doc.text(`Total ARS: $${Number(factura.totalARS).toFixed(2)}`, 10, y + 10);
+    doc.text(`Total USD: U$D${Number(factura.totalUSD).toFixed(2)}`, 10, y + 20);
+    doc.save(`factura-${String(factura.fecha).replace(/[/\s:]/g, '-')}.pdf`);
   }
 }

@@ -1,7 +1,8 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, Inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { FormsModule } from '@angular/forms';
+
 import { Producto } from '../../models/producto.model';
 import { ProductoService } from '../../services/producto.service';
 import { CarritoService } from '../../services/carrito.service';
@@ -20,7 +21,8 @@ export class ProductosComponent implements OnInit {
   formulario: FormGroup;
   textoBusqueda: string = '';
   modoEdicion: boolean = false;
-  productoEditandoId: number | null = null;
+  productoEditandoId: string | null = null;
+
   mensajeAlerta: string = '';
   tipoAlerta: 'success' | 'danger' | 'warning' = 'success';
   usuarioLogueado: boolean = false;
@@ -28,30 +30,45 @@ export class ProductosComponent implements OnInit {
   constructor(
     private productoService: ProductoService,
     private fb: FormBuilder,
-    private carritoService: CarritoService,
-    private sesionService: SesionService
+    @Inject(CarritoService) private carritoService: CarritoService, // 👈 token explícito
+    public sesionService: SesionService
   ) {
     this.formulario = this.fb.group({
       nombre: ['', Validators.required],
       descripcion: ['', Validators.required],
       precio: [null, [Validators.required, Validators.min(1)]],
       categoria: ['', Validators.required],
-      imagenUrl: ['', Validators.required]
+      imagenUrl: ['', Validators.required],
     });
   }
 
   ngOnInit(): void {
     this.usuarioLogueado = !!this.sesionService.usuarioActual;
-    this.productos = this.productoService.obtenerProductos();
+
+    this.productoService.listarActivos$().subscribe({
+      next: (items) => {
+        this.productos = (items || []).map(d => ({
+          id: d.id,
+          name: (d as any).name ?? (d as any).nombre ?? 'Producto',
+          priceARS: Number((d as any).priceARS ?? (d as any).precio ?? 0),
+          stock: Number((d as any).stock ?? 0),
+          active: (d as any).active ?? true,
+          imageUrl: (d as any).imageUrl ?? (d as any).imagenUrl ?? '',
+          description: (d as any).description ?? '',
+          category: (d as any).category ?? ''
+        }) as unknown as Producto);
+      },
+      error: (err) => {
+        console.error('Error listando productos:', err);
+        this.mostrarAlerta('No se pudieron cargar los productos', 'danger');
+      }
+    });
   }
 
   mostrarAlerta(mensaje: string, tipo: 'success' | 'danger' | 'warning' = 'success'): void {
     this.mensajeAlerta = mensaje;
     this.tipoAlerta = tipo;
-
-    setTimeout(() => {
-      this.mensajeAlerta = '';
-    }, 3000);
+    setTimeout(() => { this.mensajeAlerta = ''; }, 3000);
   }
 
   agregarAlCarrito(producto: Producto): void {
@@ -66,8 +83,15 @@ export class ProductosComponent implements OnInit {
 
   editarProducto(producto: Producto): void {
     this.modoEdicion = true;
-    this.productoEditandoId = producto.id;
-    this.formulario.patchValue(producto);
+    this.productoEditandoId = (producto.id as unknown as string) ?? null;
+
+    this.formulario.patchValue({
+      nombre: (producto as any).name ?? (producto as any).nombre ?? '',
+      descripcion: (producto as any).description ?? '',
+      precio: (producto as any).priceARS ?? (producto as any).precio ?? null,
+      categoria: (producto as any).category ?? '',
+      imagenUrl: (producto as any).imageUrl ?? ''
+    });
 
     setTimeout(() => {
       const formularioElemento = document.getElementById('formulario-producto');
@@ -81,38 +105,55 @@ export class ProductosComponent implements OnInit {
     this.formulario.reset();
   }
 
-  eliminarProducto(id: number): void {
-    this.productoService.eliminarProducto(id);
-    this.productos = this.productoService.obtenerProductos();
-    this.mostrarAlerta('Producto eliminado', 'danger');
+  eliminarProducto(id: string): void {
+    this.productoService.eliminar(id)
+      .then(() => this.mostrarAlerta('Producto eliminado', 'danger'))
+      .catch(err => { console.error(err); this.mostrarAlerta('No se pudo eliminar', 'danger'); });
   }
 
   agregarProducto(): void {
-    if (this.formulario.valid) {
-      const productoForm = this.formulario.value;
-
-      if (this.modoEdicion && this.productoEditandoId !== null) {
-        const productoActualizado: Producto = {
-          id: this.productoEditandoId,
-          ...productoForm
-        };
-        this.productoService.actualizarProducto(productoActualizado);
-        this.mostrarAlerta('Producto actualizado correctamente', 'success');
-      } else {
-        const nuevoProducto: Producto = {
-          id: Date.now(),
-          ...productoForm
-        };
-        this.productoService.agregarProducto(nuevoProducto);
-        this.mostrarAlerta('Producto agregado correctamente', 'success');
-      }
-
-      this.modoEdicion = false;
-      this.productoEditandoId = null;
-      this.formulario.reset();
-      this.productos = this.productoService.obtenerProductos();
-    } else {
+    if (!this.formulario.valid) {
       this.formulario.markAllAsTouched();
+      return;
     }
+
+    const f = this.formulario.value;
+    const payload = {
+      name: f.nombre,
+      description: f.descripcion,
+      category: f.categoria,
+      priceARS: Number(f.precio),
+      stock: 1,
+      active: true,
+      imageUrl: f.imagenUrl
+    };
+
+    if (this.modoEdicion && this.productoEditandoId) {
+      this.productoService.actualizar(this.productoEditandoId, payload)
+        .then(() => {
+          this.mostrarAlerta('Producto actualizado correctamente', 'success');
+          this._resetForm();
+        })
+        .catch(err => {
+          console.error(err);
+          this.mostrarAlerta('No se pudo actualizar', 'danger');
+        });
+    } else {
+      this.productoService.crear(payload)
+        .then(() => {
+          this.mostrarAlerta('Producto agregado correctamente', 'success');
+          this._resetForm();
+        })
+        .catch(err => {
+          console.error(err);
+          this.mostrarAlerta('No se pudo agregar', 'danger');
+        });
+    }
+  }
+
+  private _resetForm(): void {
+    this.modoEdicion = false;
+    this.productoEditandoId = null;
+    this.formulario.reset();
   }
 }

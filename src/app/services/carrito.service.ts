@@ -20,7 +20,9 @@ export class CarritoService {
   agregarProducto(producto: any): void {
     const clave = this.obtenerClaveUsuario();
     const carrito = this.obtenerItems();
-    const itemExistente = carrito.find(item => item.producto.id === producto.id);
+
+    const pid = String(producto?.id ?? ''); // id normalizado a string
+    const itemExistente = carrito.find(item => String(item.producto?.id ?? '') === pid);
 
     if (itemExistente) {
       itemExistente.cantidad += 1;
@@ -36,10 +38,12 @@ export class CarritoService {
     localStorage.removeItem(clave);
   }
 
-  eliminarProducto(id: number): void {
+  eliminarProducto(id: string | number | undefined): void {
     const clave = this.obtenerClaveUsuario();
-    const items = this.obtenerItems().filter(item => item.producto.id !== id);
+    const sid = id != null ? String(id) : '';
+    if (!sid) return;
+
+    const items = this.obtenerItems().filter(item => String(item.producto?.id ?? '') !== sid);
     localStorage.setItem(clave, JSON.stringify(items));
   }
-
 }

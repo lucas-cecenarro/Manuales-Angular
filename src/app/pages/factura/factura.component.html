@@ -1,20 +1,32 @@
-<app-factura-preview [items]="items" (confirmar)="onCompraConfirmada()"
-  (eliminarItem)="onEliminarItem($event)"></app-factura-preview>
+<div *ngIf="usuarioLogueado; else noAcceso">
 
-<div class="mt-5">
-  <h4>Historial de facturas</h4>
-  <ul class="list-group">
-    <li *ngFor="let factura of historial; let i = index"
-      class="list-group-item d-flex justify-content-between align-items-center">
-      {{ factura.fecha }} - ${{ factura.totalARS | number:'1.2-2' }}
-      <div>
-        <button class="btn btn-sm btn-outline-secondary me-2" (click)="exportarPDF(factura)">Exportar PDF</button>
-        <button class="btn btn-sm btn-outline-success me-2" (click)="exportarExcel(factura)">Exportar Excel</button>
-        <button class="btn btn-sm btn-outline-danger" (click)="eliminarFactura(i)">Eliminar</button>
-      </div>
-    </li>
-  </ul>
+  <app-factura-preview
+    [items]="items"
+    (confirmar)="onCompraConfirmada()"
+    (eliminarItem)="onEliminarItem($event)"
+  ></app-factura-preview>
+
+  <div class="mt-5">
+    <h4>Historial de facturas</h4>
+    <ul class="list-group">
+      <li *ngFor="let factura of historial; let i = index" class="list-group-item d-flex justify-content-between align-items-center">
+        {{ factura.fecha }} - ${{ factura.totalARS | number:'1.2-2' }}
+        <div>
+          <button class="btn btn-sm btn-outline-secondary me-2" (click)="exportarPDF(factura)">Exportar PDF</button>
+          <button class="btn btn-sm btn-outline-success me-2" (click)="exportarExcel(factura)">Exportar Excel</button>
+          <button class="btn btn-sm btn-outline-danger" (click)="eliminarFactura(i)">Eliminar</button>
+        </div>
+      </li>
+    </ul>
+  </div>
 </div>
+
+<!-- ALERTA SI NO HAY ACCESO -->
+<ng-template #noAcceso>
+  <div class="alert alert-warning text-center mt-4">
+    Debés iniciar sesión para generar una factura o ver tu historial.
+  </div>
+</ng-template>
 
 <!-- ALERTA GENERAL (compartida para todo) -->
 <div *ngIf="mensajeAlerta" class="alert alert-{{ tipoAlerta }} text-center mt-3">

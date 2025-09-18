@@ -7,38 +7,46 @@
 
   <div class="row mb-4 buscador-productos">
     <div class="col-12">
-      <input type="text" class="form-control" placeholder="Buscar productos, marcas y más..." [(ngModel)]="textoBusqueda">
+      <input type="text" class="form-control" placeholder="Buscar productos, marcas y más..."
+             [(ngModel)]="textoBusqueda">
     </div>
   </div>
 
   <div class="row row-cols-1 row-cols-md-3 g-4" *ngIf="productos.length > 0">
-  <div class="col" *ngFor="let producto of productos | filtroProducto:textoBusqueda">
-    <div class="card h-100 tarjeta-producto">
+    <div class="col" *ngFor="let producto of productos | filtroProducto:textoBusqueda">
+      <div class="card h-100 tarjeta-producto">
 
-      <!-- Imagen ajustada -->
-      <div class="producto-imagen">
-        <img [src]="producto.imagenUrl" alt="{{ producto.nombre }}">
-      </div>
-
-      <div class="card-body">
-        <h5 class="card-title">{{ producto.nombre }}</h5>
-        <p class="card-text">{{ producto.descripcion }}</p>
-        <p class="fw-bold text-light">$ {{ producto.precio | number:'1.2-2' }}</p>
-        <span class="badge bg-secondary">{{ producto.categoria }}</span>
-
-        <div class="mt-3 d-flex justify-content-between botones-producto" *ngIf="usuarioLogueado">
-          <button class="btn btn-sm btn-outline-primary" (click)="editarProducto(producto)">Editar</button>
-          <button class="btn btn-sm btn-outline-danger" (click)="eliminarProducto(producto.id)">Eliminar</button>
-          <button class="btn btn-sm btn-outline-success" (click)="agregarAlCarrito(producto)">Agregar al carrito</button>
-          <button *ngIf="productoEditandoId === producto.id"
-                  class="btn btn-secondary ms-2"
-                  (click)="cancelarEdicion()">Cancelar</button>
+        <!-- Imagen -->
+        <div class="producto-imagen">
+          <img [src]="producto.imagenUrl" alt="{{ producto.nombre }}">
         </div>
-      </div>
 
+        <div class="card-body">
+          <h5 class="card-title">{{ producto.nombre }}</h5>
+          <p class="card-text">{{ producto.descripcion }}</p>
+          <p class="fw-bold text-light">$ {{ producto.precio | number:'1.2-2' }}</p>
+          <span class="badge bg-secondary">{{ producto.categoria }}</span>
+
+          <div class="mt-3 d-flex justify-content-between botones-producto">
+            <!-- Botones de ADMIN (solo admin ve Editar/Eliminar) -->
+            <ng-container *ngIf="sesionService.isAdmin">
+              <button class="btn btn-sm btn-outline-primary" (click)="editarProducto(producto)">Editar</button>
+              <button class="btn btn-sm btn-outline-danger" (click)="eliminarProducto(producto.id!)">Eliminar</button>
+              <button *ngIf="productoEditandoId === producto.id"
+                      class="btn btn-secondary ms-2"
+                      (click)="cancelarEdicion()">Cancelar</button>
+            </ng-container>
+
+            <!-- Agregar al carrito: visible para todos (si querés exigir login, envolvelo en *ngIf="usuarioLogueado") -->
+            <button class="btn btn-sm btn-outline-success" (click)="agregarAlCarrito(producto)">
+              Agregar al carrito
+            </button>
+          </div>
+        </div>
+
+      </div>
     </div>
   </div>
-</div>
 </div>
 
 <!-- Alerta -->
@@ -48,13 +56,14 @@
 
 <div class="espacio"></div>
 
-<!-- Formulario -->
-<div class="container mb-5" *ngIf="usuarioLogueado">
+<!-- Formulario: SOLO ADMIN -->
+<div class="container mb-5" *ngIf="sesionService.isAdmin">
   <h3 class="text-center">
     {{ modoEdicion ? 'Editar producto' : 'Agregar nuevo producto' }}
   </h3>
 
-  <form id="formulario-producto" [formGroup]="formulario" (ngSubmit)="agregarProducto()" class="formulario-producto row g-3 mt-3">
+  <form id="formulario-producto" [formGroup]="formulario" (ngSubmit)="agregarProducto()"
+        class="formulario-producto row g-3 mt-3">
     <div class="col-md-6">
       <label class="form-label">Nombre</label>
       <input type="text" class="form-control" formControlName="nombre"

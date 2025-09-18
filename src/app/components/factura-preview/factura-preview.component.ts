@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, OnInit } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnInit, OnChanges, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ItemFactura } from '../../models/item-factura.model';
 import { BcraService } from '../../services/bcra.service';
@@ -10,42 +10,60 @@ import { BcraService } from '../../services/bcra.service';
   templateUrl: './factura-preview.component.html',
   styleUrls: ['./factura-preview.component.scss']
 })
-export class FacturaPreviewComponent implements OnInit {
+export class FacturaPreviewComponent implements OnInit, OnChanges {
   @Input() items: ItemFactura[] = [];
   @Output() confirmar = new EventEmitter<void>();
+  @Output() eliminarItem = new EventEmitter<string>();
 
   totalARS: number = 0;
   tipoCambioUSD: number = 1100;
 
-  constructor(private bcraService: BcraService) { }
+  constructor(private bcraService: BcraService) {}
 
   ngOnInit(): void {
-    this.totalARS = this.items.reduce((acc, item) => acc + item.producto.precio * item.cantidad, 0);
+    this.recalcularTotales();
 
     this.bcraService.obtenerTipoCambioUSD().subscribe(valor => {
-      this.tipoCambioUSD = valor || 1100;
+      this.tipoCambioUSD = Number(valor) > 0 ? Number(valor) : 1100;
     });
   }
 
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['items']) {
+      this.recalcularTotales();
+    }
+  }
+
   get totalUSD(): number {
-    return this.totalARS / this.tipoCambioUSD;
+    return this.tipoCambioUSD > 0 ? this.totalARS / this.tipoCambioUSD : 0;
   }
 
   confirmarCompra(): void {
     this.confirmar.emit();
   }
 
-  @Output() eliminarItem = new EventEmitter<number>();
+  eliminarProducto(id: string | number | undefined): void {
+    const sid = id != null ? String(id) : '';
+    if (!sid) return;
 
-  eliminarProducto(id: number): void {
-    this.eliminarItem.emit(id);
+    this.items = this.items.filter(item => String(item.producto?.id ?? '') !== sid);
+    this.recalcularTotales();
+
+    this.eliminarItem.emit(sid);
   }
 
-  calcularTotal(): void {
-    this.totalARS = this.items.reduce((acc, item) => acc + item.producto.precio * item.cantidad, 0);
+  /** Subtotal seguro para usar desde el template si lo necesitás */
+  calcSubtotal(item: ItemFactura): number {
+    const precio = Number((item?.producto as any)?.precio ?? (item?.producto as any)?.priceARS ?? 0);
+    const cant = Number(item?.cantidad ?? 0);
+    return precio * cant;
   }
 
+  private recalcularTotales(): void {
+    this.totalARS = this.items.reduce((acc, item) => {
+      const precio = Number((item?.producto as any)?.precio ?? (item?.producto as any)?.priceARS ?? 0);
+      const cant = Number(item?.cantidad ?? 0);
+      return acc + (precio * cant);
+    }, 0);
+  }
 }
-
-
-

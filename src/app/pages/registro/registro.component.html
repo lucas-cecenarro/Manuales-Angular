@@ -1,0 +1,40 @@
+<div class="d-flex justify-content-center align-items-center vh-100">
+  <form [formGroup]="registroForm" (ngSubmit)="onSubmit()" class="p-4 border rounded bg-light" style="min-width: 300px;">
+    <h3 class="mb-4 text-center">Registro</h3>
+
+    <div class="mb-3">
+      <label class="form-label">Nombre</label>
+      <input type="text" class="form-control" formControlName="nombre"
+        [ngClass]="{ 'is-invalid': registroForm.get('nombre')?.touched && registroForm.get('nombre')?.invalid }" />
+      <div class="invalid-feedback">El nombre es obligatorio.</div>
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label">Email</label>
+      <input type="email" class="form-control" formControlName="email"
+        [ngClass]="{ 'is-invalid': registroForm.get('email')?.touched && registroForm.get('email')?.invalid }" />
+      <div class="invalid-feedback">Ingrese un email válido.</div>
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label">Contraseña</label>
+      <input type="password" class="form-control" formControlName="password"
+        [ngClass]="{ 'is-invalid': registroForm.get('password')?.touched && registroForm.get('password')?.invalid }" />
+      <div class="invalid-feedback">Mínimo 6 caracteres.</div>
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label">Confirmar contraseña</label>
+      <input type="password" class="form-control" formControlName="confirmarPassword"
+        [ngClass]="{
+          'is-invalid': registroForm.get('confirmarPassword')?.touched &&
+                       (registroForm.get('confirmarPassword')?.invalid || registroForm.hasError('noCoinciden'))
+        }" />
+      <div class="invalid-feedback">
+        {{ registroForm.hasError('noCoinciden') ? 'Las contraseñas no coinciden.' : 'Debe confirmar la contraseña.' }}
+      </div>
+    </div>
+
+    <button type="submit" class="btn btn-primary w-100">Registrarse</button>
+  </form>
+</div>
