@@ -1,8 +1,8 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { SesionService } from '../../services/sesion.service';
 import { Router } from '@angular/router';
+import { SesionService } from '../../services/sesion.service';
 
 @Component({
   selector: 'app-login',
@@ -13,7 +13,7 @@ import { Router } from '@angular/router';
 })
 export class LoginComponent {
   loginForm: FormGroup;
-  mensajeError: string = '';
+  mensajeError = '';
   cargando = false;
 
   constructor(
@@ -31,32 +31,26 @@ export class LoginComponent {
   }
 
   async onSubmit() {
-    if (!this.loginForm.valid || this.cargando) {
+    this.mensajeError = '';
+    if (this.loginForm.invalid) {
       this.loginForm.markAllAsTouched();
       return;
     }
-    this.mensajeError = '';
-    this.cargando = true;
 
     const { email, password } = this.loginForm.value;
-
+    this.cargando = true;
     try {
-      await this.sesionService.login(email, password); // Firebase Auth
-      this.loginForm.reset();
+      await this.sesionService.login(email, password);
       this.router.navigate(['/productos']);
-    } catch (e: any) {
-      // Errores frecuentes de Firebase Auth
-      const code = e?.code || '';
-      if (code === 'auth/invalid-credential' || code === 'auth/wrong-password' || code === 'auth/user-not-found') {
-        this.mensajeError = 'Email o contraseña incorrectos.';
-      } else if (code === 'auth/too-many-requests') {
-        this.mensajeError = 'Demasiados intentos. Intentalo más tarde.';
-      } else if (code === 'auth/invalid-email') {
-        this.mensajeError = 'El email no es válido.';
-      } else {
-        this.mensajeError = 'No se pudo iniciar sesión. Intenta nuevamente.';
-        console.error('Login error:', e);
-      }
+    } catch (err: any) {
+      const code = err?.code || '';
+      this.mensajeError =
+        code === 'auth/invalid-credential' || code === 'auth/wrong-password'
+          ? 'Email o contraseña incorrectos.'
+          : code === 'auth/user-not-found'
+          ? 'No existe un usuario con ese email.'
+          : 'No se pudo iniciar sesión.';
+      console.error('Login error:', err);
     } finally {
       this.cargando = false;
     }

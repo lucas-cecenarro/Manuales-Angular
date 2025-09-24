@@ -8,7 +8,7 @@
   <div class="row mb-4 buscador-productos">
     <div class="col-12">
       <input type="text" class="form-control" placeholder="Buscar productos, marcas y más..."
-             [(ngModel)]="textoBusqueda">
+        [(ngModel)]="textoBusqueda">
     </div>
   </div>
 
@@ -16,28 +16,26 @@
     <div class="col" *ngFor="let producto of productos | filtroProducto:textoBusqueda">
       <div class="card h-100 tarjeta-producto">
 
-        <!-- Imagen -->
         <div class="producto-imagen">
-          <img [src]="producto.imagenUrl" alt="{{ producto.nombre }}">
+          <img [src]="producto.imagenUrl || producto.imageUrl" alt="{{ producto.nombre || producto.name }}">
         </div>
 
         <div class="card-body">
-          <h5 class="card-title">{{ producto.nombre }}</h5>
-          <p class="card-text">{{ producto.descripcion }}</p>
-          <p class="fw-bold text-light">$ {{ producto.precio | number:'1.2-2' }}</p>
-          <span class="badge bg-secondary">{{ producto.categoria }}</span>
+          <h5 class="card-title">{{ producto.nombre || producto.name }}</h5>
+          <p class="card-text">{{ producto.descripcion || producto.description }}</p>
+          <p class="fw-bold text-light">
+            $ {{ (producto.precio ?? producto.priceARS ?? 0) | number:'1.2-2' }}
+          </p>
+          <span class="badge bg-secondary">{{ producto.categoria || producto.category }}</span>
 
           <div class="mt-3 d-flex justify-content-between botones-producto">
-            <!-- Botones de ADMIN (solo admin ve Editar/Eliminar) -->
             <ng-container *ngIf="sesionService.isAdmin">
               <button class="btn btn-sm btn-outline-primary" (click)="editarProducto(producto)">Editar</button>
               <button class="btn btn-sm btn-outline-danger" (click)="eliminarProducto(producto.id!)">Eliminar</button>
-              <button *ngIf="productoEditandoId === producto.id"
-                      class="btn btn-secondary ms-2"
-                      (click)="cancelarEdicion()">Cancelar</button>
+              <button *ngIf="productoEditandoId === producto.id" class="btn btn-secondary ms-2"
+                (click)="cancelarEdicion()">Cancelar</button>
             </ng-container>
 
-            <!-- Agregar al carrito: visible para todos (si querés exigir login, envolvelo en *ngIf="usuarioLogueado") -->
             <button class="btn btn-sm btn-outline-success" (click)="agregarAlCarrito(producto)">
               Agregar al carrito
             </button>
@@ -56,42 +54,47 @@
 
 <div class="espacio"></div>
 
-<!-- Formulario: SOLO ADMIN -->
+<!-- Formulario SOLO ADMIN -->
 <div class="container mb-5" *ngIf="sesionService.isAdmin">
   <h3 class="text-center">
     {{ modoEdicion ? 'Editar producto' : 'Agregar nuevo producto' }}
   </h3>
 
   <form id="formulario-producto" [formGroup]="formulario" (ngSubmit)="agregarProducto()"
-        class="formulario-producto row g-3 mt-3">
+    class="formulario-producto row g-3 mt-3">
+
     <div class="col-md-6">
       <label class="form-label">Nombre</label>
       <input type="text" class="form-control" formControlName="nombre"
-             [ngClass]="{ 'is-invalid': formulario.get('nombre')?.touched && formulario.get('nombre')?.invalid }">
+        [ngClass]="{ 'is-invalid': formulario.get('nombre')?.touched && formulario.get('nombre')?.invalid }">
     </div>
 
     <div class="col-md-6">
       <label class="form-label">Categoría</label>
-      <input type="text" class="form-control" formControlName="categoria"
-             [ngClass]="{ 'is-invalid': formulario.get('categoria')?.touched && formulario.get('categoria')?.invalid }">
+      <!-- 👇 Select con categorías fijas desde Firestore -->
+      <select class="form-select" formControlName="categoria"
+        [ngClass]="{ 'is-invalid': formulario.get('categoria')?.touched && formulario.get('categoria')?.invalid }">
+        <option value="" disabled selected>Seleccioná una categoría</option>
+        <option *ngFor="let c of (categorias$ | async)" [value]="c">{{ c }}</option>
+      </select>
     </div>
 
     <div class="col-md-6">
       <label class="form-label">Precio</label>
       <input type="number" class="form-control" formControlName="precio"
-             [ngClass]="{ 'is-invalid': formulario.get('precio')?.touched && formulario.get('precio')?.invalid }">
+        [ngClass]="{ 'is-invalid': formulario.get('precio')?.touched && formulario.get('precio')?.invalid }">
     </div>
 
     <div class="col-md-6">
       <label class="form-label">Imagen (URL)</label>
       <input type="text" class="form-control" formControlName="imagenUrl"
-             [ngClass]="{ 'is-invalid': formulario.get('imagenUrl')?.touched && formulario.get('imagenUrl')?.invalid }">
+        [ngClass]="{ 'is-invalid': formulario.get('imagenUrl')?.touched && formulario.get('imagenUrl')?.invalid }">
     </div>
 
     <div class="col-12">
       <label class="form-label">Descripción</label>
       <textarea class="form-control" rows="2" formControlName="descripcion"
-                [ngClass]="{ 'is-invalid': formulario.get('descripcion')?.touched && formulario.get('descripcion')?.invalid }"></textarea>
+        [ngClass]="{ 'is-invalid': formulario.get('descripcion')?.touched && formulario.get('descripcion')?.invalid }"></textarea>
     </div>
 
     <button type="submit" class="btn btn-success" *ngIf="!modoEdicion">Agregar producto</button>

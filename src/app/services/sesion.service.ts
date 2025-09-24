@@ -1,77 +1,65 @@
-import { Injectable, inject } from '@angular/core';
-import { BehaviorSubject, Subscription, of, switchMap, map } from 'rxjs';
+import { Injectable } from '@angular/core';
+import { BehaviorSubject, combineLatest, of } from 'rxjs';
+import { map, switchMap } from 'rxjs/operators';
 
+// Firebase
 import { Auth, authState, signInWithEmailAndPassword, signOut, User } from '@angular/fire/auth';
 import { Firestore, doc, docData } from '@angular/fire/firestore';
 
-@Injectable({
-  providedIn: 'root'
-})
+export interface UsuarioSesion {
+  uid: string;
+  email: string | null;
+  displayName: string | null;
+  role: 'admin' | 'buyer' | string;
+}
+
+@Injectable({ providedIn: 'root' })
 export class SesionService {
-  private auth = inject(Auth);
-  private db = inject(Firestore);
+  private usuarioActualSubject = new BehaviorSubject<UsuarioSesion | null>(null);
 
-  private usuarioActualSubject = new BehaviorSubject<any>(null);
-  private authSub?: Subscription;
-
-  constructor() {
-    // Hidratar desde localStorage (SSR-safe)
-    if (typeof window !== 'undefined' && window.localStorage) {
-      const datos = localStorage.getItem('usuarioActual');
-      if (datos) this.usuarioActualSubject.next(JSON.parse(datos));
-    }
-
-    // Escuchar cambios de sesión y leer el rol desde Firestore: users/{uid}
-    this.authSub = authState(this.auth).pipe(
-      switchMap((u: User | null) => {
-        if (!u) return of(null);
-        const ref = doc(this.db, 'users', u.uid);
-        return docData(ref).pipe(
-          map((udoc: any) => ({
-            uid: u.uid,
-            email: u.email ?? '',
-            displayName: u.displayName ?? udoc?.displayName ?? '',
-            role: udoc?.role ?? 'buyer'  // por defecto buyer si no existe
-          }))
-        );
-      })
-    ).subscribe((profile) => {
-      if (typeof window !== 'undefined' && window.localStorage) {
-        if (profile) localStorage.setItem('usuarioActual', JSON.stringify(profile));
-        else localStorage.removeItem('usuarioActual');
-      }
-      this.usuarioActualSubject.next(profile);
-    });
+  constructor(private auth: Auth, private db: Firestore) {
+    // Mantener la sesión sincronizada con Firebase Auth + Firestore (/users/{uid})
+    authState(this.auth)
+      .pipe(
+        switchMap((fbUser: User | null) => {
+          if (!fbUser) return of(null);
+          const userDoc = doc(this.db, 'users', fbUser.uid);
+          return combineLatest([
+            of(fbUser),
+            docData(userDoc, { idField: 'id' })
+          ]).pipe(
+            map(([u, docData]: any) => {
+              const role = docData?.role ?? 'buyer';
+              const displayName = docData?.displayName ?? u.displayName ?? null;
+              const email = u.email ?? docData?.email ?? null;
+              const sesion: UsuarioSesion = { uid: u.uid, email, displayName, role };
+              return sesion;
+            })
+          );
+        })
+      )
+      .subscribe((sesion) => this.usuarioActualSubject.next(sesion));
   }
 
-  // Observable para suscribirse
-  get usuarioActual$() {
-    return this.usuarioActualSubject.asObservable();
-  }
+  // Observables / getters
+  get usuarioActual$() { return this.usuarioActualSubject.asObservable(); }
+  get usuarioActual()  { return this.usuarioActualSubject.value; }
 
-  // Acceso rápido al valor actual
-  get usuarioActual() {
-    return this.usuarioActualSubject.value;
+  get isAdmin$() {
+    return this.usuarioActual$.pipe(map(u => (u?.role === 'admin')));
   }
-
-  // Flag de conveniencia
-  get isAdmin(): boolean {
+  get isAdmin() {
     return this.usuarioActual?.role === 'admin';
   }
 
-  // Login con Email/Password (Authentication)
+  // Autenticación
   async login(email: string, password: string) {
-    const cred = await signInWithEmailAndPassword(this.auth, email, password);
-    // El listener de authState se encargará de leer el doc users/{uid} y setear el rol
-    return cred.user;
+    await signInWithEmailAndPassword(this.auth, email, password);
+    // El authState disparará la actualización de usuarioActualSubject
   }
 
-  // Logout
   async logout() {
     await signOut(this.auth);
-    if (typeof window !== 'undefined' && window.localStorage) {
-      localStorage.removeItem('usuarioActual');
-    }
     this.usuarioActualSubject.next(null);
   }
 }

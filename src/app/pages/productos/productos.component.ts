@@ -9,6 +9,10 @@ import { CarritoService } from '../../services/carrito.service';
 import { SesionService } from '../../services/sesion.service';
 import { FiltroProductoPipe } from '../../pipes/filtro-producto.pipe';
 
+// 🔽 Firestore para leer categorías fijas
+import { Firestore, collection, collectionData } from '@angular/fire/firestore';
+import { Observable, map } from 'rxjs';
+
 @Component({
   selector: 'app-productos',
   standalone: true,
@@ -27,11 +31,15 @@ export class ProductosComponent implements OnInit {
   tipoAlerta: 'success' | 'danger' | 'warning' = 'success';
   usuarioLogueado: boolean = false;
 
+  // 🔽 categorías fijas desde Firestore
+  categorias$: Observable<string[]> | undefined;
+
   constructor(
     private productoService: ProductoService,
     private fb: FormBuilder,
-    @Inject(CarritoService) private carritoService: CarritoService, // 👈 token explícito
-    public sesionService: SesionService
+    @Inject(CarritoService) public carritoService: CarritoService,
+    public sesionService: SesionService,
+    private afs: Firestore
   ) {
     this.formulario = this.fb.group({
       nombre: ['', Validators.required],
@@ -45,24 +53,41 @@ export class ProductosComponent implements OnInit {
   ngOnInit(): void {
     this.usuarioLogueado = !!this.sesionService.usuarioActual;
 
+    // 🔁 Productos en tiempo real
     this.productoService.listarActivos$().subscribe({
-      next: (items) => {
-        this.productos = (items || []).map(d => ({
-          id: d.id,
-          name: (d as any).name ?? (d as any).nombre ?? 'Producto',
-          priceARS: Number((d as any).priceARS ?? (d as any).precio ?? 0),
-          stock: Number((d as any).stock ?? 0),
-          active: (d as any).active ?? true,
-          imageUrl: (d as any).imageUrl ?? (d as any).imagenUrl ?? '',
-          description: (d as any).description ?? '',
-          category: (d as any).category ?? ''
-        }) as unknown as Producto);
+      next: (items: any[]) => {
+        this.productos = (items || []).map((d: any) => {
+          const name = d?.name ?? d?.nombre ?? 'Producto';
+          const price = Number(d?.priceARS ?? d?.precio ?? 0);
+          const category = d?.category ?? d?.categoria ?? '';
+          const description = d?.description ?? d?.descripcion ?? '';
+          const imageUrl = d?.imageUrl ?? d?.imagenUrl ?? '';
+
+          return {
+            id: d.id,
+            // “nuevos”
+            name, priceARS: price, category, description, imageUrl,
+            // alias para tu UI actual
+            nombre: name, precio: price, categoria: category, descripcion: description, imagenUrl: imageUrl
+          } as any;
+        });
       },
       error: (err) => {
         console.error('Error listando productos:', err);
         this.mostrarAlerta('No se pudieron cargar los productos', 'danger');
       }
     });
+
+    // 🔽 Leer categorías fijas desde /categories
+    const ref = collection(this.afs, 'categories');
+    this.categorias$ = collectionData(ref, { idField: 'id' }).pipe(
+      map((docs: any[]) =>
+        docs
+          .map(d => (d?.name ?? '').toString())
+          .filter(Boolean)
+          .sort((a, b) => a.localeCompare(b))
+      )
+    );
   }
 
   mostrarAlerta(mensaje: string, tipo: 'success' | 'danger' | 'warning' = 'success'): void {
@@ -81,22 +106,19 @@ export class ProductosComponent implements OnInit {
     this.mostrarAlerta('Carrito vaciado correctamente', 'warning');
   }
 
-  editarProducto(producto: Producto): void {
+  editarProducto(producto: any): void {
     this.modoEdicion = true;
-    this.productoEditandoId = (producto.id as unknown as string) ?? null;
+    this.productoEditandoId = (producto.id as string) ?? null;
 
     this.formulario.patchValue({
-      nombre: (producto as any).name ?? (producto as any).nombre ?? '',
-      descripcion: (producto as any).description ?? '',
-      precio: (producto as any).priceARS ?? (producto as any).precio ?? null,
-      categoria: (producto as any).category ?? '',
-      imagenUrl: (producto as any).imageUrl ?? ''
+      nombre: producto?.name ?? producto?.nombre ?? '',
+      descripcion: producto?.description ?? producto?.descripcion ?? '',
+      precio: producto?.priceARS ?? producto?.precio ?? null,
+      categoria: producto?.category ?? producto?.categoria ?? '',
+      imagenUrl: producto?.imageUrl ?? producto?.imagenUrl ?? ''
     });
 
-    setTimeout(() => {
-      const formularioElemento = document.getElementById('formulario-producto');
-      formularioElemento?.scrollIntoView({ behavior: 'smooth' });
-    }, 100);
+    setTimeout(() => document.getElementById('formulario-producto')?.scrollIntoView({ behavior: 'smooth' }), 100);
   }
 
   cancelarEdicion(): void {
@@ -121,34 +143,25 @@ export class ProductosComponent implements OnInit {
     const payload = {
       name: f.nombre,
       description: f.descripcion,
-      category: f.categoria,
+      category: f.categoria,                  // 👈 viene del select
       priceARS: Number(f.precio),
       stock: 1,
       active: true,
       imageUrl: f.imagenUrl
     };
 
-    if (this.modoEdicion && this.productoEditandoId) {
-      this.productoService.actualizar(this.productoEditandoId, payload)
-        .then(() => {
-          this.mostrarAlerta('Producto actualizado correctamente', 'success');
-          this._resetForm();
-        })
-        .catch(err => {
-          console.error(err);
-          this.mostrarAlerta('No se pudo actualizar', 'danger');
-        });
-    } else {
-      this.productoService.crear(payload)
-        .then(() => {
-          this.mostrarAlerta('Producto agregado correctamente', 'success');
-          this._resetForm();
-        })
-        .catch(err => {
-          console.error(err);
-          this.mostrarAlerta('No se pudo agregar', 'danger');
-        });
-    }
+    const op = this.modoEdicion && this.productoEditandoId
+      ? this.productoService.actualizar(this.productoEditandoId, payload)
+      : this.productoService.crear(payload);
+
+    op.then(() => {
+      this.mostrarAlerta(this.modoEdicion ? 'Producto actualizado correctamente' : 'Producto agregado correctamente', 'success');
+      this._resetForm();
+    })
+      .catch(err => {
+        console.error(err);
+        this.mostrarAlerta('No se pudo guardar el producto', 'danger');
+      });
   }
 
   private _resetForm(): void {

@@ -20,8 +20,8 @@
       <!-- precio con fallback a priceARS -->
       <td>
         $ {{
-          (item?.producto?.precio ?? item?.producto?.priceARS ?? 0)
-            | number:'1.2-2'
+        (item?.producto?.precio ?? item?.producto?.priceARS ?? 0)
+        | number:'1.2-2'
         }}
       </td>
 
@@ -31,11 +31,8 @@
       </td>
 
       <td>
-        <button
-          class="btn btn-sm btn-outline-danger"
-          (click)="eliminarProducto(item?.producto?.id)"
-          [disabled]="!item?.producto?.id"
-        >
+        <button class="btn btn-sm btn-outline-danger" (click)="eliminarProducto(item?.producto?.id)"
+          [disabled]="!item?.producto?.id">
           Eliminar
         </button>
       </td>
@@ -46,5 +43,8 @@
 <div class="text-end">
   <p><strong>Total ARS:</strong> $ {{ totalARS | number:'1.2-2' }}</p>
   <p><strong>Total USD:</strong> U$D {{ totalUSD | number:'1.2-2' }}</p>
-  <button class="btn btn-success mt-3" (click)="confirmarCompra()">Confirmar compra</button>
+  <button class="btn btn-success mt-3" (click)="confirmarCompra()" [disabled]="(items?.length ?? 0) === 0">
+    Confirmar compra
+  </button>
+
 </div>

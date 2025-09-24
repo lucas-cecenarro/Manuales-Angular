@@ -1,5 +1,9 @@
-import { Component, OnInit, Inject, PLATFORM_ID } from '@angular/core';
+import { Component, OnInit, Inject, PLATFORM_ID, OnDestroy } from '@angular/core';
 import { isPlatformBrowser, CommonModule } from '@angular/common';
+import { HttpClientModule } from '@angular/common/http';
+import { Subscription, combineLatest, of } from 'rxjs';
+import { switchMap, map } from 'rxjs/operators';
+
 import { CarritoService } from '../../services/carrito.service';
 import { BcraService } from '../../services/bcra.service';
 import { ItemFactura } from '../../models/item-factura.model';
@@ -8,27 +12,36 @@ import * as XLSX from 'xlsx';
 import { FacturaPreviewComponent } from '../../components/factura-preview/factura-preview.component';
 import { SesionService } from '../../services/sesion.service';
 
+// Firestore
+import { Firestore, collection, collectionData, addDoc, deleteDoc, doc, query, where, orderBy } from '@angular/fire/firestore';
+
 @Component({
   selector: 'app-factura',
   standalone: true,
-  imports: [CommonModule, FacturaPreviewComponent],
+  imports: [CommonModule, HttpClientModule, FacturaPreviewComponent],
   templateUrl: './factura.component.html',
   styleUrls: ['./factura.component.scss']
 })
-export class FacturaComponent implements OnInit {
+export class FacturaComponent implements OnInit, OnDestroy {
   items: ItemFactura[] = [];
-  totalARS: number = 0;
-  tipoCambioUSD: number = 1100;
-  historial: any[] = [];
-  mensajeAlerta: string = '';
+  totalARS = 0;
+  tipoCambioUSD = 1100;
+
+  // historial desde Firestore
+  historial: Array<any & { id: string }> = [];
+
+  mensajeAlerta = '';
   tipoAlerta: 'success' | 'danger' | 'warning' = 'success';
-  usuarioLogueado: boolean = false;
+  usuarioLogueado = false;
   enNavegador = false;
+
+  private sub?: Subscription;
 
   constructor(
     private bcraService: BcraService,
     private carritoService: CarritoService,
     public sesionService: SesionService,
+    private afs: Firestore,
     @Inject(PLATFORM_ID) private platformId: Object
   ) {
     this.enNavegador = isPlatformBrowser(this.platformId);
@@ -37,19 +50,50 @@ export class FacturaComponent implements OnInit {
   ngOnInit(): void {
     if (!this.enNavegador) return;
 
-    // Reacciona a login/logout
-    this.sesionService.usuarioActual$.subscribe(() => {
-      this.usuarioLogueado = !!this.sesionService.usuarioActual;
-      this.items = this.carritoService.obtenerItems();
-      this.historial = JSON.parse(localStorage.getItem('facturas') || '[]');
-      this.calcularTotal();
+    // Reaccionar a login/logout
+    this.sub = this.sesionService.usuarioActual$.pipe(
+      switchMap(user => {
+        this.usuarioLogueado = !!user;
+        // refrescar items y totales cada cambio de usuario
+        this.items = this.carritoService.obtenerItems();
+        this.calcularTotal();
+
+        if (!user?.uid) {
+          this.historial = [];
+          return of([]);
+        }
+
+        // leer órdenes del usuario autenticado, más reciente primero
+        const ref = collection(this.afs, 'orders');
+        const q = query(ref, where('userId', '==', user.uid), orderBy('ts', 'desc'));
+        return collectionData(q, { idField: 'id' });
+      })
+    ).subscribe({
+      next: (docs: any[]) => {
+        this.historial = (docs || []).map(d => ({
+          id: d.id,
+          ts: d.ts ?? 0,
+          fecha: d.fecha ?? '',
+          items: d.items ?? [],
+          totalARS: Number(d.totalARS ?? 0),
+          totalUSD: Number(d.totalUSD ?? 0),
+        }));
+      },
+      error: (e) => {
+        console.error('Error cargando órdenes:', e);
+        this.mostrarAlerta('No se pudo cargar tu historial', 'danger');
+      }
     });
 
-    // Tipo de cambio (con fallback)
+    // Tipo de cambio
     this.bcraService.obtenerTipoCambioUSD().subscribe(valor => {
       this.tipoCambioUSD = Number(valor) > 0 ? Number(valor) : 1100;
       this.calcularTotal();
     });
+  }
+
+  ngOnDestroy(): void {
+    this.sub?.unsubscribe();
   }
 
   private precioUnitario(item: ItemFactura): number {
@@ -78,40 +122,70 @@ export class FacturaComponent implements OnInit {
     this.confirmarCompra();
   }
 
-  onEliminarItem(id: string): void {
+  // ahora recibe id de documento en Firestore
+  async onEliminarItem(id: string): Promise<void> {
     const sid = id ?? '';
     if (!sid) return;
+
     this.items = this.items.filter(item => String(item?.producto?.id ?? '') !== sid);
     this.calcularTotal();
     this.carritoService.eliminarProducto(sid);
   }
 
-  confirmarCompra(): void {
+  // ====== FIRESTORE: crear orden por usuario ======
+  async confirmarCompra(): Promise<void> {
     if (!this.enNavegador) return;
 
-    const factura = {
-      fecha: new Date().toLocaleString(),
+    const user = this.sesionService.usuarioActual;
+    if (!user?.uid) {
+      this.mostrarAlerta('Debés iniciar sesión para confirmar la compra.', 'warning');
+      return;
+    }
+
+    const itemsValidos = Array.isArray(this.items) && this.items.length > 0;
+    const totalValido = Number.isFinite(this.totalARS) && this.totalARS > 0;
+
+    if (!itemsValidos || !totalValido) {
+      this.mostrarAlerta('Tu carrito está vacío. Agregá productos antes de confirmar.', 'warning');
+      return;
+    }
+
+    const now = new Date();
+    const orden = {
+      userId: user.uid,
+      ts: now.getTime(),
+      fecha: now.toLocaleString(),
       items: this.items,
       totalARS: this.totalARS,
       totalUSD: this.totalUSD
     };
 
-    const historial = JSON.parse(localStorage.getItem('facturas') || '[]');
-    historial.push(factura);
-    localStorage.setItem('facturas', JSON.stringify(historial));
+    try {
+      await addDoc(collection(this.afs, 'orders'), orden);
 
-    this.carritoService.vaciarCarrito();
-    this.items = [];
-    this.totalARS = 0;
-    this.mostrarAlerta('Compra confirmada y guardada en historial', 'success');
+      // limpiar carrito local (solo items del usuario)
+      this.carritoService.vaciarCarrito();
+      this.items = [];
+      this.totalARS = 0;
+
+      this.mostrarAlerta('Compra confirmada y guardada en tu historial', 'success');
+    } catch (e) {
+      console.error('Error creando orden:', e);
+      this.mostrarAlerta('No se pudo confirmar la compra', 'danger');
+    }
   }
 
-  eliminarFactura(index: number): void {
-    if (!this.enNavegador) return;
-    this.historial.splice(index, 1);
-    localStorage.setItem('facturas', JSON.stringify(this.historial));
+  // ====== FIRESTORE: eliminar orden por id ======
+  async eliminarFactura(id: string): Promise<void> {
+    try {
+      await deleteDoc(doc(this.afs, 'orders', id));
+    } catch (e) {
+      console.error('Error eliminando factura:', e);
+      this.mostrarAlerta('No se pudo eliminar la factura', 'danger');
+    }
   }
 
+  // ====== Exportaciones (sin cambios estructurales) ======
   exportarExcel(factura: any): void {
     const datos = factura.items.map((item: any) => {
       const p = item?.producto || {};
@@ -133,11 +207,11 @@ export class FacturaComponent implements OnInit {
   }
 
   exportarPDF(factura: any): void {
-    const doc = new jsPDF();
-    doc.setFontSize(16);
-    doc.text('Factura', 10, 10);
-    doc.setFontSize(12);
-    doc.text(`Fecha: ${factura.fecha}`, 10, 20);
+    const docu = new jsPDF();
+    docu.setFontSize(16);
+    docu.text('Factura', 10, 10);
+    docu.setFontSize(12);
+    docu.text(`Fecha: ${factura.fecha}`, 10, 20);
     let y = 30;
 
     factura.items.forEach((item: any, index: number) => {
@@ -145,12 +219,12 @@ export class FacturaComponent implements OnInit {
       const nombre = p.nombre ?? p.name ?? 'Producto';
       const precio = Number(p.precio ?? p.priceARS ?? 0);
       const cant = Number(item?.cantidad ?? 0);
-      doc.text(`${index + 1}. ${nombre} - Cant: ${cant} - $${precio}`, 10, y);
+      docu.text(`${index + 1}. ${nombre} - Cant: ${cant} - $${precio}`, 10, y);
       y += 10;
     });
 
-    doc.text(`Total ARS: $${Number(factura.totalARS).toFixed(2)}`, 10, y + 10);
-    doc.text(`Total USD: U$D${Number(factura.totalUSD).toFixed(2)}`, 10, y + 20);
-    doc.save(`factura-${String(factura.fecha).replace(/[/\s:]/g, '-')}.pdf`);
+    docu.text(`Total ARS: $${Number(factura.totalARS).toFixed(2)}`, 10, y + 10);
+    docu.text(`Total USD: U$D${Number(factura.totalUSD).toFixed(2)}`, 10, y + 20);
+    docu.save(`factura-${String(factura.fecha).replace(/[/\s:]/g, '-')}.pdf`);
   }
 }

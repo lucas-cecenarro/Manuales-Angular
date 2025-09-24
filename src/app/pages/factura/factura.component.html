@@ -14,7 +14,7 @@
         <div>
           <button class="btn btn-sm btn-outline-secondary me-2" (click)="exportarPDF(factura)">Exportar PDF</button>
           <button class="btn btn-sm btn-outline-success me-2" (click)="exportarExcel(factura)">Exportar Excel</button>
-          <button class="btn btn-sm btn-outline-danger" (click)="eliminarFactura(i)">Eliminar</button>
+          <button class="btn btn-sm btn-outline-danger" (click)="eliminarFactura(factura.id)">Eliminar</button>
         </div>
       </li>
     </ul>
