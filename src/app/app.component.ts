@@ -19,7 +19,7 @@ export class AppComponent {
 
   constructor(
     private router: Router,
-    private sesionService: SesionService,
+    public sesionService: SesionService,
     private carritoService: CarritoService,
     @Inject(PLATFORM_ID) private platformId: Object
   ) {

@@ -28,6 +28,9 @@
       <li class="nav-item">
         <a routerLink="/chat" routerLinkActive="active" class="nav-link">Chat</a>
       </li>
+      <li class="nav-item" *ngIf="(sesionService.isAdmin$ | async)">
+        <a class="nav-link" routerLink="/reportes">Reportes</a>
+      </li>
     </ul>
   </div>
   <div class="d-flex ms-auto">

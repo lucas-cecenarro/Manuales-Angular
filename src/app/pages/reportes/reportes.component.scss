@@ -1,0 +1,67 @@
+.container {
+    max-width: 1100px;
+    margin: 0 auto;
+}
+
+.controls {
+    display: flex;
+    gap: .5rem;
+    margin-bottom: 1rem;
+}
+
+.controls button {
+    padding: .4rem .7rem;
+    border: 1px solid #ccc;
+    background: #f8f9fa;
+    border-radius: .4rem;
+    cursor: pointer;
+}
+
+.controls button.active {
+    border-color: #0d6efd;
+    color: #0d6efd;
+}
+
+.chart-card {
+    background: #111;
+    color: #fff;
+    padding: 1rem;
+    border-radius: .6rem;
+    margin-bottom: 1rem;
+}
+
+.table-wrap {
+    overflow: auto;
+    background: #fff;
+    border-radius: .6rem;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+th,
+td {
+    padding: .6rem .8rem;
+    border-bottom: 1px solid #eee;
+    text-align: left;
+}
+
+td.num {
+    text-align: right;
+}
+
+.btn-export {
+    padding: .5rem .8rem;
+    border: none;
+    background: #198754;
+    color: #fff;
+    border-radius: .4rem;
+    cursor: pointer;
+}
+
+.center {
+    display: flex;
+    justify-content: center;
+}
