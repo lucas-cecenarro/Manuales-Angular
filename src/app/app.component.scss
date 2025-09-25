@@ -1,0 +1,84 @@
+$color-fondo-navbar: #121921;         // oscuro tecnológico
+$color-texto: #ffffff;                // texto base
+$color-hover: #00e0ff;                // celeste llamativo
+$color-activo: #00c3e3;               // celeste fuerte
+$color-hover-suave: lighten($color-hover, 10%); // para resaltar al pasar el mouse
+
+.barra-envio {
+  background-color: $color-fondo-navbar;
+  color: $color-texto;
+  
+}
+.navbar {
+  background-color: $color-fondo-navbar;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+
+.navbar-brand {
+  font-weight: 700;
+  font-size: 1.4rem;
+  color: $color-hover !important;
+  letter-spacing: 0.5px;
+}
+
+.navbar-nav {
+  .nav-link {
+  font-size: 1.2rem;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  transition: all 0.2s ease-in-out;
+
+  &:hover {
+    color: $color-hover-suave;
+    transform: translateY(-5px);
+    text-decoration-color: $color-hover-suave;
+    filter: drop-shadow(0 0 2px #f7f7f7); // opcional para resaltar
+  }
+
+  &.active {
+    color: $color-activo !important;
+    text-decoration: underline;
+    text-decoration-color: $color-hover;
+    text-underline-offset: 6px;   // separa la línea del texto
+    text-decoration-thickness: 2px;
+   }
+ }
+
+
+
+}
+
+.logo-img {
+  height: 60px;
+  object-fit: contain;
+  filter: drop-shadow(0 0 3px #e6c8ff); // opcional para resaltar
+}
+
+* {
+  font-family: 'Montserrat', sans-serif;
+}
+
+.contacto-card {
+  font-family: 'Montserrat', sans-serif;
+
+  h2 {
+    font-weight: 700;
+  }
+
+  h4 {
+    font-weight: 600;
+  }
+
+  p {
+    font-size: 1rem;
+  }
+
+  .redes {
+    transition: transform 0.2s ease;
+    font-weight: 500;
+
+    &:hover {
+      transform: scale(1.05);
+    }
+  }
+}

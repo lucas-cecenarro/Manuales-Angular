@@ -1,0 +1,87 @@
+.chat-wrap {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 16px;
+  display: grid;
+  gap: 12px;
+  color: #eaeaea;
+}
+
+.chat-header { display: flex; justify-content: space-between; align-items: center; }
+.muted { opacity: .85; font-size: .9rem; color: #c9c9cf; }
+
+.chat-list {
+  border: 1px solid #2f2f33;
+  border-radius: 12px;
+  padding: 12px;
+  height: 60vh;
+  overflow: auto;
+  background: #101114;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Burbuja base */
+.bubble {
+  max-width: 75%;
+  align-self: flex-start;               /* por defecto, izquierda */
+  background: #1b1c20;
+  border: 1px solid #2a2d34;
+  color: #f1f3f5;
+  border-radius: 16px;
+  padding: 10px 12px;
+}
+
+/* Mis mensajes a la derecha con otro color */
+.bubble.mine {
+  align-self: flex-end;                 /* derecha */
+  background: #2a6fdb;                  /* azul suave */
+  border-color: #2a6fdb;
+  color: #ffffff;
+}
+
+.meta {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  font-size: .88rem;
+  opacity: .95;
+}
+.bubble .name { color: #fff; font-weight: 700; }
+.bubble .time { margin-left: auto; opacity: .9; font-size: .8rem; }
+
+.role-badge {
+  font-size: .72rem;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #242833;
+  border: 1px solid #3a3f4a;
+  color: #e6eaf0;
+}
+.bubble.mine .role-badge {
+  background: rgba(255,255,255,.2);
+  border-color: rgba(255,255,255,.3);
+  color: #fff;
+}
+
+.text {
+  margin-top: 4px;
+  line-height: 1.35;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* Input y botones */
+.chat-input { display: flex; gap: 8px; }
+.chat-input input {
+  flex: 1; padding: 10px 12px; border-radius: 10px;
+  border: 1px solid #2f2f33; background: #15171b; color: #f1f3f5;
+}
+.chat-input input::placeholder { color: #9aa0a6; opacity: 1; }
+.send-btn, .login-btn {
+  padding: 10px 14px; border-radius: 10px; border: 1px solid #2f2f33;
+  background: #22262c; color: #ffffff; cursor: pointer;
+}
+.send-btn:disabled { opacity: .6; cursor: not-allowed; }
+.send-btn:active, .login-btn:active { transform: scale(.98); }

@@ -1,0 +1,63 @@
+<div class="container mt-5">
+  <h2 class="text-center mb-4">Panel de carga de manuales</h2>
+
+  <form [formGroup]="manualForm" (ngSubmit)="onSubmit()" class="border rounded p-4 bg-light">
+
+    <!-- Título -->
+    <div class="mb-3">
+      <label class="form-label">Título del manual</label>
+      <input type="text" class="form-control" formControlName="titulo"
+        [ngClass]="{ 'is-invalid': manualForm.get('titulo')?.touched && manualForm.get('titulo')?.invalid }" />
+      <div class="invalid-feedback">El título es obligatorio.</div>
+    </div>
+
+    <!-- Descripción -->
+    <div class="mb-3">
+      <label class="form-label">Descripción</label>
+      <textarea rows="3" class="form-control" formControlName="descripcion"
+        [ngClass]="{ 'is-invalid': manualForm.get('descripcion')?.touched && manualForm.get('descripcion')?.invalid }"></textarea>
+      <div class="invalid-feedback">La descripción es obligatoria.</div>
+    </div>
+
+    <!-- Precio -->
+    <div class="mb-3">
+      <label class="form-label">Precio (USD)</label>
+      <input type="number" class="form-control" formControlName="precioUSD" min="0"
+        [ngClass]="{ 'is-invalid': manualForm.get('precioUSD')?.touched && manualForm.get('precioUSD')?.invalid }" />
+      <div class="invalid-feedback">El precio debe ser un número positivo.</div>
+    </div>
+
+    <!-- Categoría -->
+    <div class="mb-3">
+      <label class="form-label">Categoría</label>
+      <select class="form-select" formControlName="categoria"
+        [ngClass]="{ 'is-invalid': manualForm.get('categoria')?.touched && manualForm.get('categoria')?.invalid }">
+        <option value="">Seleccionar categoría</option>
+        <option *ngFor="let cat of categorias" [value]="cat">{{ cat }}</option>
+      </select>
+      <div class="invalid-feedback">Seleccioná una categoría.</div>
+    </div>
+
+    <!-- Portada -->
+    <div class="mb-3">
+      <label class="form-label">Portada del manual</label>
+      <input type="file" class="form-control" (change)="onPortadaChange($event)" accept="image/*" />
+      <div *ngIf="portadaPreview" class="mt-2">
+        <strong>Vista previa:</strong><br />
+        <img [src]="portadaPreview" class="img-fluid rounded" style="max-height: 200px;" />
+      </div>
+    </div>
+
+    <!-- Archivo -->
+    <div class="mb-3">
+      <label class="form-label">Archivo del manual (PDF, DOCX)</label>
+      <input type="file" class="form-control" (change)="onArchivoChange($event)" accept=".pdf,.doc,.docx" />
+      <div *ngIf="archivoNombre" class="form-text mt-1">
+        Archivo seleccionado: <strong>{{ archivoNombre }}</strong>
+      </div>
+    </div>
+
+    <!-- Botón -->
+    <button type="submit" class="btn btn-success w-100 mt-3">Cargar manual</button>
+  </form>
+</div>
