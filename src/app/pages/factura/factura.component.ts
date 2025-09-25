@@ -3,6 +3,7 @@ import { isPlatformBrowser, CommonModule } from '@angular/common';
 import { HttpClientModule } from '@angular/common/http';
 import { Subscription, combineLatest, of } from 'rxjs';
 import { switchMap, map } from 'rxjs/operators';
+import { FacturaService, OrdenDTO } from '../../services/factura.service';
 
 import { CarritoService } from '../../services/carrito.service';
 import { BcraService } from '../../services/bcra.service';
@@ -27,8 +28,7 @@ export class FacturaComponent implements OnInit, OnDestroy {
   totalARS = 0;
   tipoCambioUSD = 1100;
 
-  // historial desde Firestore
-  historial: Array<any & { id: string }> = [];
+  historial: Array<OrdenDTO> = [];
 
   mensajeAlerta = '';
   tipoAlerta: 'success' | 'danger' | 'warning' = 'success';
@@ -41,7 +41,7 @@ export class FacturaComponent implements OnInit, OnDestroy {
     private bcraService: BcraService,
     private carritoService: CarritoService,
     public sesionService: SesionService,
-    private afs: Firestore,
+    private facturaService: FacturaService,           // <-- nuevo
     @Inject(PLATFORM_ID) private platformId: Object
   ) {
     this.enNavegador = isPlatformBrowser(this.platformId);
@@ -50,31 +50,19 @@ export class FacturaComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     if (!this.enNavegador) return;
 
-    // Reaccionar a login/logout
+    // Reaccionar a login/logout y cargar historial desde el service
     this.sub = this.sesionService.usuarioActual$.pipe(
       switchMap(user => {
         this.usuarioLogueado = !!user;
-        // refrescar items y totales cada cambio de usuario
         this.items = this.carritoService.obtenerItems();
         this.calcularTotal();
-
-        if (!user?.uid) {
-          this.historial = [];
-          return of([]);
-        }
-
-        // leer órdenes del usuario autenticado, más reciente primero
-        const ref = collection(this.afs, 'orders');
-        const q = query(ref, where('userId', '==', user.uid), orderBy('ts', 'desc'));
-        return collectionData(q, { idField: 'id' });
+        if (!user?.uid) return of([]);
+        return this.facturaService.facturasUsuario$(user.uid);
       })
     ).subscribe({
-      next: (docs: any[]) => {
+      next: (docs) => {
         this.historial = (docs || []).map(d => ({
-          id: d.id,
-          ts: d.ts ?? 0,
-          fecha: d.fecha ?? '',
-          items: d.items ?? [],
+          ...d,
           totalARS: Number(d.totalARS ?? 0),
           totalUSD: Number(d.totalUSD ?? 0),
         }));
@@ -122,17 +110,15 @@ export class FacturaComponent implements OnInit, OnDestroy {
     this.confirmarCompra();
   }
 
-  // ahora recibe id de documento en Firestore
   async onEliminarItem(id: string): Promise<void> {
     const sid = id ?? '';
     if (!sid) return;
-
     this.items = this.items.filter(item => String(item?.producto?.id ?? '') !== sid);
     this.calcularTotal();
     this.carritoService.eliminarProducto(sid);
   }
 
-  // ====== FIRESTORE: crear orden por usuario ======
+  // ====== FIRESTORE a través del service ======
   async confirmarCompra(): Promise<void> {
     if (!this.enNavegador) return;
 
@@ -142,16 +128,13 @@ export class FacturaComponent implements OnInit, OnDestroy {
       return;
     }
 
-    const itemsValidos = Array.isArray(this.items) && this.items.length > 0;
-    const totalValido = Number.isFinite(this.totalARS) && this.totalARS > 0;
-
-    if (!itemsValidos || !totalValido) {
+    if (!Array.isArray(this.items) || this.items.length === 0 || !(this.totalARS > 0)) {
       this.mostrarAlerta('Tu carrito está vacío. Agregá productos antes de confirmar.', 'warning');
       return;
     }
 
     const now = new Date();
-    const orden = {
+    const orden: Omit<OrdenDTO, 'id'> = {
       userId: user.uid,
       ts: now.getTime(),
       fecha: now.toLocaleString(),
@@ -161,13 +144,10 @@ export class FacturaComponent implements OnInit, OnDestroy {
     };
 
     try {
-      await addDoc(collection(this.afs, 'orders'), orden);
-
-      // limpiar carrito local (solo items del usuario)
+      await this.facturaService.crearOrden(orden);
       this.carritoService.vaciarCarrito();
       this.items = [];
       this.totalARS = 0;
-
       this.mostrarAlerta('Compra confirmada y guardada en tu historial', 'success');
     } catch (e) {
       console.error('Error creando orden:', e);
@@ -175,10 +155,9 @@ export class FacturaComponent implements OnInit, OnDestroy {
     }
   }
 
-  // ====== FIRESTORE: eliminar orden por id ======
   async eliminarFactura(id: string): Promise<void> {
     try {
-      await deleteDoc(doc(this.afs, 'orders', id));
+      await this.facturaService.eliminarOrden(id);
     } catch (e) {
       console.error('Error eliminando factura:', e);
       this.mostrarAlerta('No se pudo eliminar la factura', 'danger');

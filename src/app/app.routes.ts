@@ -4,6 +4,7 @@ import { RegistroComponent } from './pages/registro/registro.component';
 import { ProductosComponent } from './pages/productos/productos.component';
 import { FacturaComponent } from './pages/factura/factura.component';
 import { ContactoComponent } from './pages/contacto/contacto.component';
+import { ChatComponent } from './pages/chat/chat.component';
 
 export const routes: Routes = [
   { path: '', redirectTo: 'productos', pathMatch: 'full' },
@@ -12,5 +13,6 @@ export const routes: Routes = [
   { path: 'registro', component: RegistroComponent },
   { path: 'productos', component: ProductosComponent },
   { path: 'factura', component: FacturaComponent },
-  { path: '**', redirectTo: '' }
+  { path: '**', redirectTo: '' },
+  { path: 'chat', component: ChatComponent }
 ];

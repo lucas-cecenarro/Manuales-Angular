@@ -9,13 +9,13 @@ import { provideFirestore, getFirestore } from '@angular/fire/firestore';
 
 import { firebaseConfig } from './firebase.config';
 
+
 export const appConfig: ApplicationConfig = {
   providers: [
     provideRouter(routes),
     provideFirebaseApp(() => initializeApp(firebaseConfig)),
     provideAuth(() => getAuth()),
     provideFirestore(() => getFirestore()),
-    // provideStorage(() => getStorage()),
   ],
 };
 
