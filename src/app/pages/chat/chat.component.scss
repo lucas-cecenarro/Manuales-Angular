@@ -4,11 +4,11 @@
   padding: 16px;
   display: grid;
   gap: 12px;
-  color: #eaeaea;
+  color: #232222;
 }
 
 .chat-header { display: flex; justify-content: space-between; align-items: center; }
-.muted { opacity: .85; font-size: .9rem; color: #c9c9cf; }
+.muted { opacity: .85; font-size: .9rem; color: #1c1c1e; }
 
 .chat-list {
   border: 1px solid #2f2f33;
@@ -85,3 +85,4 @@
 }
 .send-btn:disabled { opacity: .6; cursor: not-allowed; }
 .send-btn:active, .login-btn:active { transform: scale(.98); }
+

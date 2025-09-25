@@ -36,9 +36,17 @@
                 (click)="cancelarEdicion()">Cancelar</button>
             </ng-container>
 
-            <button class="btn btn-sm btn-outline-success" (click)="agregarAlCarrito(producto)">
-              Agregar al carrito
-            </button>
+            <ng-container *ngIf="(sesionService.usuarioActual$ | async) as user; else irALogin">
+              <button class="btn btn-sm btn-outline-success" (click)="agregarAlCarrito(producto)">
+                Agregar al carrito
+              </button>
+            </ng-container>
+
+            <ng-template #irALogin>
+              <button class="btn btn-sm btn-outline-secondary" [routerLink]="['/login']">
+                Inicia sesión para comprar
+              </button>
+            </ng-template>
           </div>
         </div>
 

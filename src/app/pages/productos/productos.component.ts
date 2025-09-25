@@ -8,6 +8,8 @@ import { ProductoService } from '../../services/producto.service';
 import { CarritoService } from '../../services/carrito.service';
 import { SesionService } from '../../services/sesion.service';
 import { FiltroProductoPipe } from '../../pipes/filtro-producto.pipe';
+import { RouterModule } from '@angular/router';
+
 
 // 🔽 Firestore para leer categorías fijas
 import { Firestore, collection, collectionData } from '@angular/fire/firestore';
@@ -16,7 +18,7 @@ import { Observable, map } from 'rxjs';
 @Component({
   selector: 'app-productos',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, FormsModule, FiltroProductoPipe],
+  imports: [CommonModule, ReactiveFormsModule, FormsModule, FiltroProductoPipe, RouterModule],
   templateUrl: './productos.component.html',
   styleUrls: ['./productos.component.scss']
 })
