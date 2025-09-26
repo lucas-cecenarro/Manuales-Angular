@@ -1,4 +1,4 @@
-import { Component, OnInit, Inject } from '@angular/core';
+import { Component, OnInit, OnDestroy, Inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { FormsModule } from '@angular/forms';
@@ -8,7 +8,6 @@ import { CarritoService } from '../../services/carrito.service';
 import { SesionService } from '../../services/sesion.service';
 import { FiltroProductoPipe } from '../../pipes/filtro-producto.pipe';
 import { RouterModule } from '@angular/router';
-
 
 // 🔽 Firestore para leer categorías fijas
 import { Firestore, collection, collectionData } from '@angular/fire/firestore';
@@ -21,15 +20,19 @@ import { Observable, map } from 'rxjs';
   templateUrl: './productos.component.html',
   styleUrls: ['./productos.component.scss']
 })
-export class ProductosComponent implements OnInit {
+export class ProductosComponent implements OnInit, OnDestroy {
   productos: Producto[] = [];
   formulario: FormGroup;
   textoBusqueda: string = '';
   modoEdicion: boolean = false;
   productoEditandoId: string | null = null;
 
+  // 🔔 Alertas (adaptado a Bootstrap)
   mensajeAlerta: string = '';
   tipoAlerta: 'success' | 'danger' | 'warning' = 'success';
+  alertState: 'in' | 'out' = 'out';
+  private timeoutId: any = null;
+
   usuarioLogueado: boolean = false;
 
   // 🔽 categorías fijas desde Firestore
@@ -91,11 +94,44 @@ export class ProductosComponent implements OnInit {
     );
   }
 
+  ngOnDestroy(): void {
+    if (this.timeoutId) {
+      clearTimeout(this.timeoutId);
+      this.timeoutId = null;
+    }
+  }
+
+  // ===== Alertas (versión Bootstrap) =====
   mostrarAlerta(mensaje: string, tipo: 'success' | 'danger' | 'warning' = 'success'): void {
     this.mensajeAlerta = mensaje;
     this.tipoAlerta = tipo;
-    setTimeout(() => { this.mensajeAlerta = ''; }, 3000);
+    this.alertState = 'in';
+
+    // Reiniciar el temporizador si hay uno corriendo
+    if (this.timeoutId) clearTimeout(this.timeoutId);
+    this.timeoutId = setTimeout(() => this.cerrarAlerta(), 3000);
   }
+
+  cerrarAlerta(): void {
+    this.alertState = 'out';
+    // Esperar transición antes de limpiar el mensaje
+    setTimeout(() => {
+      this.mensajeAlerta = '';
+    }, 300);
+  }
+
+  getAlertClasses(): string {
+    // Usa clases Bootstrap: alert + tonos + transición "fade show"
+    const base = 'alert rounded-3 shadow-sm mb-3 fade';
+    const byType: Record<typeof this.tipoAlerta, string> = {
+      success: 'alert-success',
+      danger: 'alert-danger',
+      warning: 'alert-warning'
+    };
+    const visibility = (this.alertState === 'in') ? 'show' : ''; // 'show' activa la transición
+    return `${base} ${byType[this.tipoAlerta]} ${visibility}`;
+  }
+  // =====================================
 
   agregarAlCarrito(producto: Producto): void {
     this.carritoService.agregarProducto(producto);

@@ -403,50 +403,49 @@ h3 {
   }
 }
 
-/* Simulación de directivas Angular */
+
 [hidden] {
   display: none !important;
 }
 
-/* === Layout del formulario en 2 columnas (sin tocar HTML) === */
+
 .formulario-producto {
-  display: grid !important;       /* anula el display:flex de .row */
-  grid-template-columns: 1fr;     /* 1 columna en mobile */
-  gap: 1rem;                      /* respeta tu g-3 */
+  display: grid !important;     
+  grid-template-columns: 1fr;    
+  gap: 1rem;                     
 }
 
-/* ≥768px: 2 columnas (Nombre/Categoría) (Precio/Imagen) */
 @media (min-width: 768px) {
   .formulario-producto {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  /* Los "col-md-6" ya no necesitan márgenes/padding especiales */
   .formulario-producto .col-md-6 {
     margin: 0;
     padding: 0;
   }
 }
 
-/* Descripción abajo, a lo ancho del formulario */
 .formulario-producto .col-12 {
   grid-column: 1 / -1;
-  padding: 0;   /* opcional, para alinear con las de arriba */
+  padding: 0;   
 }
 
-/* Los botones (Agregar/Actualizar) también a lo ancho */
 .formulario-producto > button[type="submit"] {
   grid-column: 1 / -1;
 }
 
-/* Si aparece el aviso "No hay productos..." dentro del form, que ocupe todo */
 .formulario-producto .alert {
   grid-column: 1 / -1;
 }
 
 .botones-producto {
-  margin-top: auto;     /* empuja los botones al fondo */
+  margin-top: auto;    
   display: flex;
   gap: 0.5rem;
   flex-wrap: wrap;
+}
+
+.alert.fade {
+  transition: opacity .3s ease;
 }
