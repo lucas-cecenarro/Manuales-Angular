@@ -1,8 +1,6 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject, EnvironmentInjector, runInInjectionContext } from '@angular/core';
 import { BehaviorSubject, combineLatest, of } from 'rxjs';
 import { map, switchMap } from 'rxjs/operators';
-
-// Firebase
 import { Auth, authState, signInWithEmailAndPassword, signOut, User } from '@angular/fire/auth';
 import { Firestore, doc, docData } from '@angular/fire/firestore';
 
@@ -17,23 +15,30 @@ export interface UsuarioSesion {
 export class SesionService {
   private usuarioActualSubject = new BehaviorSubject<UsuarioSesion | null>(null);
 
+  private injector = inject(EnvironmentInjector);
+
   constructor(private auth: Auth, private db: Firestore) {
-    // Mantener la sesión sincronizada con Firebase Auth + Firestore (/users/{uid})
     authState(this.auth)
       .pipe(
         switchMap((fbUser: User | null) => {
           if (!fbUser) return of(null);
+
           const userDoc = doc(this.db, 'users', fbUser.uid);
-          return combineLatest([
-            of(fbUser),
-            docData(userDoc, { idField: 'id' })
-          ]).pipe(
+
+          // ⬇️ Ejecutamos docData dentro de un injection context
+          const combined$ = runInInjectionContext(this.injector, () =>
+            combineLatest([
+              of(fbUser),
+              docData(userDoc, { idField: 'id' })
+            ])
+          );
+
+          return combined$.pipe(
             map(([u, docData]: any) => {
               const role = docData?.role ?? 'buyer';
               const displayName = docData?.displayName ?? u.displayName ?? null;
               const email = u.email ?? docData?.email ?? null;
-              const sesion: UsuarioSesion = { uid: u.uid, email, displayName, role };
-              return sesion;
+              return { uid: u.uid, email, displayName, role } as UsuarioSesion;
             })
           );
         })
@@ -43,7 +48,7 @@ export class SesionService {
 
   // Observables / getters
   get usuarioActual$() { return this.usuarioActualSubject.asObservable(); }
-  get usuarioActual()  { return this.usuarioActualSubject.value; }
+  get usuarioActual() { return this.usuarioActualSubject.value; }
 
   get isAdmin$() {
     return this.usuarioActual$.pipe(map(u => (u?.role === 'admin')));

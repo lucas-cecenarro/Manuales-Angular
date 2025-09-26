@@ -8,17 +8,12 @@
         <button [class.active]="periodo==='30d'" (click)="cambiarPeriodo('30d')">Últimos 30 días</button>
     </div>
 
-    <div class="chart-card">
+    <div class="chart-card" *ngIf="isBrowser">
         <h5>Unidades vendidas por día</h5>
         <canvas baseChart [data]="ventasCfg" [type]="'line'"></canvas>
     </div>
 
-    <div class="chart-card">
-        <h5>Evolución USD Oficial (semana)</h5>
-        <canvas baseChart [data]="dolarCfg" [type]="'line'"></canvas>
-    </div>
-
-    <div class="chart-card">
+    <div class="chart-card" *ngIf="isBrowser">
         <h5>Top 3 productos más vendidos</h5>
         <canvas baseChart [data]="topCfg" [type]="'bar'"></canvas>
     </div>

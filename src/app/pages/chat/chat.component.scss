@@ -8,7 +8,7 @@
 }
 
 .chat-header { display: flex; justify-content: space-between; align-items: center; }
-.muted { opacity: .85; font-size: .9rem; color: #1c1c1e; }
+.muted { opacity: .85; font-size: .9rem; color: #25252c; }
 
 .chat-list {
   border: 1px solid #2f2f33;
@@ -16,7 +16,7 @@
   padding: 12px;
   height: 60vh;
   overflow: auto;
-  background: #101114;
+  background: #333740;
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -26,7 +26,7 @@
 .bubble {
   max-width: 75%;
   align-self: flex-start;               /* por defecto, izquierda */
-  background: #1b1c20;
+  background: #1d2851;
   border: 1px solid #2a2d34;
   color: #f1f3f5;
   border-radius: 16px;
@@ -76,7 +76,7 @@
 .chat-input { display: flex; gap: 8px; }
 .chat-input input {
   flex: 1; padding: 10px 12px; border-radius: 10px;
-  border: 1px solid #2f2f33; background: #15171b; color: #f1f3f5;
+  border: 1px solid #2f2f33; background: #252830; color: #f1f3f5;
 }
 .chat-input input::placeholder { color: #9aa0a6; opacity: 1; }
 .send-btn, .login-btn {

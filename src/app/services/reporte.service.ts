@@ -1,22 +1,17 @@
 import { Injectable, inject } from '@angular/core';
 import { Firestore, collection, query, orderBy, limit, getDocs, startAfter, DocumentData, CollectionReference } from '@angular/fire/firestore';
 import { doc, getDoc } from '@angular/fire/firestore';
-import { BcraService } from '../services/bcra.service'; // ajusta el path si difiere
 import { ItemRowFlat, OrderDoc, Periodo } from '../models/reportes.models';
 
 @Injectable({ providedIn: 'root' })
 export class ReportesService {
   private db = inject(Firestore);
-  private bcra = inject(BcraService);
-
   private ordersCol(): CollectionReference<DocumentData> {
     return collection(this.db, 'orders');
   }
 
-  // cache simple de nombres de usuario para evitar múltiples lecturas
   private userNameCache = new Map<string, string>();
 
-  // ===== Página de órdenes -> filas planas por ítem =====
   async fetchPage(lastSnap?: any, pageSize = 50): Promise<{ rows: ItemRowFlat[], lastSnap?: any }> {
     const q = lastSnap
       ? query(this.ordersCol(), orderBy('ts', 'desc'), startAfter(lastSnap), limit(pageSize))
@@ -56,7 +51,6 @@ export class ReportesService {
     return { rows, lastSnap: last };
   }
 
-  // ===== Agregaciones para gráficos (desde filas planas) =====
   aggregateVentas(rows: ItemRowFlat[], periodo: Periodo): { labels: string[], data: number[] } {
     const buckets = new Map<string, number>();
     const now = Date.now();
@@ -90,23 +84,7 @@ export class ReportesService {
     return { labels: arr.map(x=>x[0]), data: arr.map(x=>x[1]) };
   }
 
-  // Dólar: usás tu servicio actual; acá solo envolvemos para el gráfico semanal.
-  async dolarUltimos7Dias(): Promise<{ labels: string[], data: number[] }> {
-    // Tu servicio actual trae el día de "hoy".
-    // Para no complicar con múltiples requests diarios (si tu endpoint lo permite por rango, mejor),
-    // por ahora graficamos SOLO el dato de hoy replicado 7 veces (placeholder razonable
-    // hasta que expongas un método por rango).
-    const val = await this.bcra.obtenerTipoCambioUSD().toPromise();
-    const labels = Array.from({length:7}).map((_,i)=>{
-      const d = new Date(Date.now() - (6-i)*24*60*60*1000);
-      return `${d.getDate()}/${d.getMonth()+1}`;
-    });
-    const data = Array(7).fill(val ?? null);
-    return { labels, data };
-  }
-
   exportarCSV(hist: ItemRowFlat[]): string {
-    // separador ';' y punto como decimal
     const header = 'fecha;usuario;producto;categoria;cantidad;precioARS;precioUSD;totalItemARS;totalItemUSD;orderId';
     const rows = hist.map(r => {
       const d = new Date(r.ts);
@@ -125,14 +103,13 @@ export class ReportesService {
         r.orderId
       ];
 
-      // scape de comillas por si hay ; en textos
       return cells.map(c => typeof c === 'string' ? `"${c.replace(/"/g,'""')}"` : c).join(';');
     });
 
     return [header, ...rows].join('\n');
   }
 
-  // ===== helpers privados =====
+
   private async resolveUserName(uid: string): Promise<string> {
     if (this.userNameCache.has(uid)) return this.userNameCache.get(uid)!;
     const ref = doc(this.db, 'users', uid);

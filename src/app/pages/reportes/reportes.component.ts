@@ -1,5 +1,5 @@
-import { Component, OnDestroy, OnInit, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, OnDestroy, OnInit, inject, PLATFORM_ID } from '@angular/core';
+import { isPlatformBrowser, CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { BaseChartDirective } from 'ng2-charts';
 import { ChartData } from 'chart.js';
@@ -16,6 +16,8 @@ import { SesionService } from '../../services/sesion.service';
   styleUrls: ['./reportes.component.scss']
 })
 export class ReportesComponent implements OnInit, OnDestroy {
+  private platformId = inject(PLATFORM_ID);
+  isBrowser = isPlatformBrowser(this.platformId);
   private reportes = inject(ReportesService);
   private sesion = inject(SesionService);
   private router = inject(Router);
@@ -37,14 +39,12 @@ export class ReportesComponent implements OnInit, OnDestroy {
   // chart configs básicos
   ventasCfg: ChartData<'line'> = { labels: [], datasets: [{ data: [], label: 'Unidades vendidas' }] };
   topCfg: ChartData<'bar'> = { labels: [], datasets: [{ data: [], label: 'Top 3 productos' }] };
-  dolarCfg: ChartData<'line'> = { labels: [], datasets: [{ data: [], label: 'USD Oficial (BCRA)' }] };
 
   async ngOnInit() {
     // gate simple
     if (!this.sesion.isAdmin) { this.router.navigateByUrl('/'); return; }
 
     await this.cargarPrimeraPagina();
-    await this.cargarDolarSemana();
     this.recalcularGraficos();
   }
 
@@ -80,11 +80,6 @@ export class ReportesComponent implements OnInit, OnDestroy {
 
     const top = this.reportes.topProductos(this.rows, 3);
     this.topCfg = { labels: top.labels, datasets: [{ data: top.data, label: 'Top 3 productos' }] };
-  }
-
-  private async cargarDolarSemana() {
-    const s = await this.reportes.dolarUltimos7Dias();
-    this.dolarCfg = { labels: s.labels, datasets: [{ data: s.data, label: 'USD Oficial (últimos 7 días)' }] };
   }
 
   exportarCSV() {

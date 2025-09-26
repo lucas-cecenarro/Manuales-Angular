@@ -1,39 +1,42 @@
-import { Injectable, inject } from '@angular/core';
-import {
-  Firestore, collection, addDoc, deleteDoc, doc,
-  query, where, orderBy, collectionData
-} from '@angular/fire/firestore';
+import { Injectable, inject, EnvironmentInjector, runInInjectionContext } from '@angular/core';
+import { Firestore, collection, addDoc, deleteDoc, doc, query, where, orderBy, collectionData } from '@angular/fire/firestore';
 import { Observable } from 'rxjs';
 
 export interface OrdenDTO {
-  id: string;          // <-- obligatorio
+  id: string;       // asignado con { idField: 'id' }
   userId: string;
-  ts: number;
-  fecha: string;
-  items: any[];
+  ts: number;       // epoch ms
+  fecha: string;    // string legible
+  items: any[];     // [{ cantidad, producto: {...} }, ...]
   totalARS: number;
   totalUSD: number;
 }
 
 @Injectable({ providedIn: 'root' })
 export class FacturaService {
-  private afs = inject(Firestore);
+  private db = inject(Firestore);
+  private injector = inject(EnvironmentInjector);
 
-  /** Stream del historial del usuario actual (filtrado por userId) */
+  /**
+   * Stream de órdenes del usuario (ordenadas por ts desc).
+   * Envuelto en runInInjectionContext para evitar:
+   * "Firebase API called outside injection context: collectionData".
+   */
   facturasUsuario$(uid: string): Observable<OrdenDTO[]> {
-    const ref = collection(this.afs, 'orders');
-    const q = query(ref, where('userId', '==', uid), orderBy('ts', 'desc'));
-    return collectionData(q, { idField: 'id' }) as Observable<OrdenDTO[]>;
+    return runInInjectionContext(this.injector, () => {
+      const ref = collection(this.db, 'orders');
+      const q = query(ref, where('userId', '==', uid), orderBy('ts', 'desc'));
+      return collectionData(q, { idField: 'id' }) as Observable<OrdenDTO[]>;
+    });
   }
 
-  /** Crear una orden cumpliendo tus reglas de seguridad */
+  /** Crear una orden (las reglas verifican userId == auth.uid e items > 0) */
   async crearOrden(data: Omit<OrdenDTO, 'id'>): Promise<void> {
-    // Reglas exigen: userId == request.auth.uid y items.size() > 0
-    await addDoc(collection(this.afs, 'orders'), data);
+    await addDoc(collection(this.db, 'orders'), data);
   }
 
-  /** Eliminar una orden por id (solo admin por reglas) */
+  /** Eliminar una orden (por reglas: sólo admin) */
   async eliminarOrden(id: string): Promise<void> {
-    await deleteDoc(doc(this.afs, 'orders', id));
+    await deleteDoc(doc(this.db, 'orders', id));
   }
 }

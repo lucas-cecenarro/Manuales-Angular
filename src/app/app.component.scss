@@ -1,8 +1,8 @@
-$color-fondo-navbar: #121921;         // oscuro tecnológico
-$color-texto: #ffffff;                // texto base
-$color-hover: #00e0ff;                // celeste llamativo
-$color-activo: #00c3e3;               // celeste fuerte
-$color-hover-suave: lighten($color-hover, 10%); // para resaltar al pasar el mouse
+$color-fondo-navbar: #121921;        
+$color-texto: #ffffff;                
+$color-hover: #00e0ff;                
+$color-activo: #00c3e3;               
+$color-hover-suave: lighten($color-hover, 10%); 
 
 .barra-envio {
   background-color: $color-fondo-navbar;
@@ -32,14 +32,14 @@ $color-hover-suave: lighten($color-hover, 10%); // para resaltar al pasar el mou
     color: $color-hover-suave;
     transform: translateY(-5px);
     text-decoration-color: $color-hover-suave;
-    filter: drop-shadow(0 0 2px #f7f7f7); // opcional para resaltar
+    filter: drop-shadow(0 0 2px #f7f7f7); 
   }
 
   &.active {
     color: $color-activo !important;
     text-decoration: underline;
     text-decoration-color: $color-hover;
-    text-underline-offset: 6px;   // separa la línea del texto
+    text-underline-offset: 6px;   
     text-decoration-thickness: 2px;
    }
  }

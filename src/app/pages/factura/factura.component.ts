@@ -4,7 +4,6 @@ import { HttpClientModule } from '@angular/common/http';
 import { Subscription, combineLatest, of } from 'rxjs';
 import { switchMap, map } from 'rxjs/operators';
 import { FacturaService, OrdenDTO } from '../../services/factura.service';
-
 import { CarritoService } from '../../services/carrito.service';
 import { BcraService } from '../../services/bcra.service';
 import { ItemFactura } from '../../models/item-factura.model';
@@ -12,9 +11,6 @@ import jsPDF from 'jspdf';
 import * as XLSX from 'xlsx';
 import { FacturaPreviewComponent } from '../../components/factura-preview/factura-preview.component';
 import { SesionService } from '../../services/sesion.service';
-
-// Firestore
-import { Firestore, collection, collectionData, addDoc, deleteDoc, doc, query, where, orderBy } from '@angular/fire/firestore';
 
 @Component({
   selector: 'app-factura',
@@ -49,8 +45,6 @@ export class FacturaComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     if (!this.enNavegador) return;
-
-    // Reaccionar a login/logout y cargar historial desde el service
     this.sub = this.sesionService.usuarioActual$.pipe(
       switchMap(user => {
         this.usuarioLogueado = !!user;
@@ -164,7 +158,6 @@ export class FacturaComponent implements OnInit, OnDestroy {
     }
   }
 
-  // ====== Exportaciones (sin cambios estructurales) ======
   exportarExcel(factura: any): void {
     const datos = factura.items.map((item: any) => {
       const p = item?.producto || {};

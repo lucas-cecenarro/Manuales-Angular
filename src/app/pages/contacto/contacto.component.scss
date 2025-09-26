@@ -1,0 +1,57 @@
+/* Contenedor general del contacto */
+.contacto-card {
+  background-color: #2f3b46;   /* igual al fondo de productos */
+  color: #f1f1f1;             /* texto en gris claro */
+  border-radius: 12px;
+  padding: 2rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  max-width: 600px;
+  margin: 2rem auto;
+}
+
+/* Título */
+.contacto-card h2 {
+  color: #00bcd4;  /* mismo celeste de "Nuestros Productos" */
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+/* Links de redes y demás */
+.contacto-card a {
+  color: #00bcd4;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.contacto-card a:hover {
+  color: #80deea; /* tono celeste más claro al hover */
+}
+
+/* Iconos */
+.contacto-card .icon {
+  color: #00bcd4;
+  margin-right: 0.5rem;
+}
+
+/* Línea divisoria */
+.contacto-card hr {
+  border: none;
+  border-top: 1px solid rgba(255,255,255,0.2);
+  margin: 1.5rem 0;
+}
+
+/* Botones redes sociales */
+.contacto-card .social-btn {
+  background-color: transparent;
+  border: 1px solid #00bcd4;
+  color: #00bcd4;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  margin: 0.3rem;
+  transition: all 0.2s;
+}
+
+.contacto-card .social-btn:hover {
+  background-color: #00bcd4;
+  color: #1c1c1c;
+}
