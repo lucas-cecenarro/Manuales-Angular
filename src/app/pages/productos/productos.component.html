@@ -56,14 +56,12 @@
   </div>
 </div>
 
-<!-- Alerta -->
 <div *ngIf="mensajeAlerta" class="alert alert-{{ tipoAlerta }} text-center" role="alert">
   {{ mensajeAlerta }}
 </div>
 
 <div class="espacio"></div>
 
-<!-- Formulario SOLO ADMIN -->
 <div class="container mb-5" *ngIf="sesionService.isAdmin">
   <h3 class="text-center">
     {{ modoEdicion ? 'Editar producto' : 'Agregar nuevo producto' }}

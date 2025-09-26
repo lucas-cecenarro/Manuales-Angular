@@ -129,4 +129,19 @@ h4 {
   }
 }
 
+.table thead.table-dark th,
+.table thead.table-dark td {
+  background: linear-gradient(135deg, #667eea, #764ba2) !important;
+  color: #fff !important;
+  border-color: rgba(255, 255, 255, 0.2) !important;
+}
+
+.table thead.table-dark th:first-child { border-top-left-radius: 12px; }
+.table thead.table-dark th:last-child  { border-top-right-radius: 12px; }
+
+.table thead.table-dark {
+  --bs-table-bg: initial !important;
+  --bs-table-color: #fff !important;
+  --bs-table-border-color: rgba(255,255,255,.2) !important;
+}
 

@@ -169,7 +169,11 @@ h3 {
 
 .card-body {
   padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
 }
+
 
 .card-title {
   color: #2c3e50;
@@ -438,4 +442,11 @@ h3 {
 /* Si aparece el aviso "No hay productos..." dentro del form, que ocupe todo */
 .formulario-producto .alert {
   grid-column: 1 / -1;
+}
+
+.botones-producto {
+  margin-top: auto;     /* empuja los botones al fondo */
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
 }
