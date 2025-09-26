@@ -1,13 +1,14 @@
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
 <div class="container productos-container">
   <h2 class="text-center mb-4">Nuestros Productos</h2>
 
-  <div *ngIf="productos.length === 0" class="alert alert-info text-center">
+  <div class="alert alert-info text-center" id="noProductos" hidden>
     No hay productos disponibles aún.
   </div>
 
   <div class="row mb-4 buscador-productos">
     <div class="col-12">
-      <input type="text" class="form-control" placeholder="Buscar productos, marcas y más..."
+      <input type="text" class="form-control" placeholder="Buscar productos, marcas y más..." id="textoBusqueda"
         [(ngModel)]="textoBusqueda">
     </div>
   </div>

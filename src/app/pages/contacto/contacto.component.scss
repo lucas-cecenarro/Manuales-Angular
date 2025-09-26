@@ -1,57 +1,146 @@
-/* Contenedor general del contacto */
-.contacto-card {
-  background-color: #2f3b46;   /* igual al fondo de productos */
-  color: #f1f1f1;             /* texto en gris claro */
-  border-radius: 12px;
-  padding: 2rem;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-  max-width: 600px;
-  margin: 2rem auto;
-}
+        body {
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            margin: 0;
+        }
 
-/* Título */
-.contacto-card h2 {
-  color: #00bcd4;  /* mismo celeste de "Nuestros Productos" */
-  text-align: center;
-  margin-bottom: 1.5rem;
-}
+        .contacto-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            max-width: 600px;
+            margin: 2rem auto;
+            padding: 2.5rem;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
 
-/* Links de redes y demás */
-.contacto-card a {
-  color: #00bcd4;
-  text-decoration: none;
-  transition: color 0.2s;
-}
+        h2 {
+            color: #2c3e50;
+            font-weight: 700;
+            margin-bottom: 2rem;
+            font-size: 2.2rem;
+        }
 
-.contacto-card a:hover {
-  color: #80deea; /* tono celeste más claro al hover */
-}
+        h4 {
+            color: #34495e;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            font-size: 1.4rem;
+        }
 
-/* Iconos */
-.contacto-card .icon {
-  color: #00bcd4;
-  margin-right: 0.5rem;
-}
+        h5 {
+            color: #34495e;
+            font-weight: 600;
+            margin-top: 2rem;
+            margin-bottom: 1.5rem;
+            font-size: 1.2rem;
+        }
 
-/* Línea divisoria */
-.contacto-card hr {
-  border: none;
-  border-top: 1px solid rgba(255,255,255,0.2);
-  margin: 1.5rem 0;
-}
+        p {
+            color: #555;
+            line-height: 1.6;
+            margin-bottom: 1rem;
+        }
 
-/* Botones redes sociales */
-.contacto-card .social-btn {
-  background-color: transparent;
-  border: 1px solid #00bcd4;
-  color: #00bcd4;
-  padding: 0.5rem 1rem;
-  border-radius: 8px;
-  margin: 0.3rem;
-  transition: all 0.2s;
-}
+        .icon {
+            color: #667eea;
+            font-size: 1.1rem;
+        }
 
-.contacto-card .social-btn:hover {
-  background-color: #00bcd4;
-  color: #1c1c1c;
-}
+        hr {
+            border: none;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, #ddd, transparent);
+            margin: 2rem 0;
+        }
+
+        .social-btn {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.75rem 1.5rem;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            text-decoration: none;
+            border-radius: 25px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+            margin-bottom: 0.5rem;
+        }
+
+        .social-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+            color: white;
+            text-decoration: none;
+        }
+
+        .social-btn i {
+            font-size: 1.1rem;
+        }
+
+        .contact-info {
+            background: rgba(102, 126, 234, 0.05);
+            padding: 1.5rem;
+            border-radius: 15px;
+            margin: 1.5rem 0;
+        }
+
+        .contact-info p {
+            margin-bottom: 0.75rem;
+            font-weight: 500;
+        }
+
+        .company-description {
+            background: rgba(118, 75, 162, 0.05);
+            padding: 1.5rem;
+            border-radius: 15px;
+            border-left: 4px solid #764ba2;
+            margin: 1.5rem 0;
+        }
+
+        .social-container {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        @media (max-width: 768px) {
+            .contacto-card {
+                margin: 1rem;
+                padding: 1.5rem;
+            }
+            
+            h2 {
+                font-size: 1.8rem;
+            }
+            
+            .social-container {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .social-btn {
+                justify-content: center;
+            }
+        }
+
+        .animate-fade-in {
+            animation: fadeIn 0.8s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
