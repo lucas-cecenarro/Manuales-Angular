@@ -1,0 +1,56 @@
+<div class="chat-wrap">
+  <div class="chat-header">
+    <h2>Comunidad</h2>
+    <span class="muted" *ngIf="(isLogged$ | async) === false">
+      Solo usuarios autenticados pueden enviar mensajes.
+    </span>
+  </div>
+
+  <div #list class="chat-list">
+    <ng-container *ngIf="(messages$ | async) as msgs">
+      <div
+        *ngFor="let m of msgs"
+        class="bubble"
+        [class.mine]="(currentUid$ | async) === m.uid"
+      >
+        <div class="meta">
+          <b class="name">{{ m.authorName }}</b>
+          <span class="role-badge">{{ m.authorRole | roleDisplay }}</span>
+          <span class="time">
+            {{ m.createdAt?.toDate() | date:'shortTime' }}
+          </span>
+        </div>
+
+        <div class="text">{{ m.text }}</div>
+      </div>
+    </ng-container>
+  </div>
+
+  <form class="chat-input" (ngSubmit)="onSend()">
+    <input
+      type="text"
+      [(ngModel)]="draft"
+      name="draft"
+      placeholder="Escribe un mensaje..."
+      [disabled]="(isLogged$ | async) === false"
+      maxlength="1000"
+      required
+    />
+    <button
+      type="submit"
+      [disabled]="(isLogged$ | async) === false || !draft.trim()"
+      class="send-btn"
+    >
+      Enviar
+    </button>
+
+    <button
+      *ngIf="(isLogged$ | async) === false"
+      type="button"
+      class="login-btn"
+      (click)="goLogin()"
+    >
+      Iniciar sesión
+    </button>
+  </form>
+</div>
